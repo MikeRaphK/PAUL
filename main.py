@@ -20,7 +20,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 if __name__ == "__main__":
     # Read arguments
-    if len(sys.argv) != 4:
+    if len(sys.argv) != 3:
         print(f"Usage: python {sys.argv[0]} <GitHub URL> <Issue Number>")
         sys.exit(1)
 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     repo = ghu.clone_repo(repo_url, repo_path)
 
     # Create (or checkout) to the new branch
-    branch_name = "PAUL-branch" + "_" + sys.argv[3]
+    branch_name = "PAUL-branch"
     print(f"\nBranching to '{branch_name}'...\n")
     if branch_name in [b.name for b in repo.branches]:
         repo.git.checkout(branch_name)
