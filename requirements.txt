@@ -1,0 +1,9 @@
+GitPython==3.1.44
+langchain_community==0.3.24
+langchain_core==0.3.60
+langchain_openai==0.3.17
+langgraph==0.4.5
+python-dotenv==1.1.0
+Requests==2.32.3
+typing_extensions==4.13.2
+urllib3==2.4.0
