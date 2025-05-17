@@ -2,53 +2,53 @@ import os
 import re
 import requests
 import shutil
+import subprocess
+import time
 
 from git import Repo
 from requests.adapters import HTTPAdapter
 from typing import Any, List, Dict, Tuple
 from urllib3.util.retry import Retry
 
-def request_get_and_retry(url: str, retries: int = 3, timeout: int = 5, **kwargs: Any) -> requests.Response:
+def request_with_retry(method: str, url: str, retries: int = 3, timeout: int = 5, **kwargs: Any) -> requests.Response:
     """
-    Performs an HTTP GET request with retry and timeout logic.
+    Performs an HTTP request with retry and timeout logic.
 
     Args:
-        url (str): The URL to send the GET request to.
-        retries (int, optional): The number of retry attempts for failed requests. Defaults to 3.
+        method (str): The HTTP method to use (e.g., 'GET', 'POST', etc.).
+        url (str): The URL to send the request to.
+        retries (int, optional): Number of retry attempts. Defaults to 3.
         timeout (int, optional): Timeout for the request in seconds. Defaults to 5.
-        **kwargs (Any): Additional keyword arguments to pass to requests.get(), such as headers, params, auth, etc.
+        **kwargs (Any): Additional keyword arguments to pass to requests.request(), such as headers, json, data, etc.
 
     Returns:
         requests.Response: The response object if the request succeeds.
 
     Raises:
-        Exception: If the request ultimately fails after retries.
+        Exception: If the request fails after all retries.
     """
-    
-    # Define the retry strategy
     retry_strategy = Retry(
         total=retries,
         backoff_factor=1,
         status_forcelist=[429, 500, 502, 503, 504],
-        allowed_methods=["GET"]
+        allowed_methods=[method]
     )
 
-    # Mount the adapter with the retry strategy
     adapter = HTTPAdapter(max_retries=retry_strategy)
-    http = requests.Session()
-    http.mount("http://", adapter)
-    http.mount("https://", adapter)
+    session = requests.Session()
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
 
-    # Use the session to make a GET request with timeout
     try:
-        response = http.get(url, timeout=timeout, **kwargs)
+        response = session.request(method=method, url=url, timeout=timeout, **kwargs)
         response.raise_for_status()
         return response
     except requests.exceptions.RequestException as e:
-        msg = f"Request GET error for {url}"
+        msg = f"Request {method} error for {url}"
         if hasattr(e, 'response') and e.response is not None:
             msg += f": {e.response.status_code} {e.response.text}"
         raise Exception(msg) from e
+
 
 
 def parse_owner_name_default_branch(repo_url: str, GITHUB_TOKEN: str) -> Tuple[str, str, str]:
@@ -62,16 +62,19 @@ def parse_owner_name_default_branch(repo_url: str, GITHUB_TOKEN: str) -> Tuple[s
         Tuple[str, str, str]: A tuple containing the repository owner, name, and default branch.
         If the URL is invalid or the repo is not found, returns (None, None, None).
     """
+    # Try to get the owner and repo name from the URL
     match = re.match(r'https?://github\.com/([^/]+)/([^/]+)(?:/|$)', repo_url)
     if not match:
         return None, None
     owner, repo =  match.group(1), match.group(2)
 
+    # Try to get the default branch
     api_url = f"https://api.github.com/repos/{owner}/{repo}"
     headers = { "Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github+json" }
-    response = request_get_and_retry(api_url, headers=headers)
+    response = request_with_retry("GET", api_url, headers=headers)
     default_branch = response.json().get("default_branch", "main")
     return owner, repo, default_branch
+
 
 
 def get_open_issues(owner: str, name: str) -> List[Dict[str, str]]:
@@ -87,7 +90,7 @@ def get_open_issues(owner: str, name: str) -> List[Dict[str, str]]:
     """
     issues_url = f"https://api.github.com/repos/{owner}/{name}/issues"
     params = {'state': 'open', 'per_page': 100}
-    response = request_get_and_retry(issues_url, params=params)
+    response = request_with_retry("GET", issues_url, params=params)
     
     # Get title, body and number of each issue while ignoring pull requests
     issues = []
@@ -99,23 +102,48 @@ def get_open_issues(owner: str, name: str) -> List[Dict[str, str]]:
     return issues
 
 
-def clone_repo(repo_url: str, repo_path: str) -> Repo:
-    """Clones a Git repository to a specified local path, removing any existing directory.
 
-    Args:
-        repo_url (str): The URL of the Git repository to clone.
-        repo_path (str): The local file path where the repository should be cloned.
-
-    Returns:
-        Repo: A GitPython Repo object representing the cloned repository.
+def clone_repo(repo_url: str, repo_path: str, timeout: float = 15.0, max_retries: int = 3, backoff: float = 5.0) -> Repo:
     """
-    if os.path.exists(repo_path):
-        shutil.rmtree(repo_path)
-    Repo.clone_from(repo_url, repo_path)
-    return Repo(repo_path)
+    Clone a git repo with a per-attempt timeout and retry policy.
+    
+    Args:
+        repo_url:     HTTPS or SSH URL of the repo to clone.
+        repo_path:    Local directory to clone into.
+        timeout:      Seconds to wait for each `git clone` before giving up.
+        max_retries:  How many times to retry on error or timeout.
+        backoff:      Seconds to sleep between attempts.
+    
+    Returns:
+        A GitPython Repo object for the cloned repo.
+    
+    Raises:
+        RuntimeError on final failure.
+    """
+    for attempt in range(0, max_retries):
+        try:
+            # Clean up old clone
+            if os.path.exists(repo_path):
+                shutil.rmtree(repo_path)
+            
+            # Attempt to clone with a timeout
+            subprocess.run(["git", "clone", repo_url, repo_path], check=True, timeout=timeout)
+            return Repo(repo_path)
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+            pass
+        except Exception as e:
+            raise RuntimeError(f"Git clone unexpected error: {e!r}")
+        
+        # Retry policy
+        if attempt < max_retries:
+            time.sleep(backoff)
+    # Raise an error if all attempts fail
+    raise RuntimeError(f"Failed to clone {repo_url} into {repo_path} after {max_retries} attempts.")
 
 
-def create_pr(repo: Repo, commit_msg:str, owner: str, repo_name: str, GITHUB_TOKEN: str, title: str, body: str, base_branch: str) -> None:
+
+def create_pr(repo: Repo, commit_msg:str, owner: str, repo_name: str, GITHUB_TOKEN: str, title: str, body: str, base_branch: str,
+              timeout: float = 15.0, max_retries: int = 3, backoff: float = 5.0) -> None:
     """Stages all changes, commits them, pushes to the current branch, and creates a pull request on GitHub.
 
     The function assumes the current branch (i.e., `repo.active_branch.name`) is the source (head) of the pull request.
@@ -131,13 +159,30 @@ def create_pr(repo: Repo, commit_msg:str, owner: str, repo_name: str, GITHUB_TOK
         body (str): The body/description of the pull request.
         base_branch (str): The name of the branch to merge into (usually 'main' or 'master').
     """
+    # Git add, commit, and push with retry policy
     repo.git.add(".")
     repo.index.commit(commit_msg)
-    if repo.active_branch.tracking_branch() is None:
-        repo.git.push("--set-upstream", "origin", repo.active_branch.name)
-    else:
-        repo.git.push()
+    branch = repo.active_branch.name
+    cwd = repo.working_tree_dir
+    success = False
+    for attempt in range(0, max_retries):
+        try:
+            # Attempt to push with a timeout
+            subprocess.run(["git", "push", "origin", branch], cwd=cwd, check=True, timeout=timeout)
+            success = True
+            break
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+            pass
+        except Exception as e:
+            raise RuntimeError(f"Git push unexpected error: {e!r}")
 
+        # Retry policy
+        if attempt < max_retries:
+            time.sleep(backoff)
+    if not success:
+        raise RuntimeError(f"git push origin {branch} failed after {max_retries} attempts.")
+
+    # Create the pull request
     pr_url = f"https://api.github.com/repos/{owner}/{repo_name}/pulls"
     headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github+json"}
     data = {
@@ -146,6 +191,4 @@ def create_pr(repo: Repo, commit_msg:str, owner: str, repo_name: str, GITHUB_TOK
         "head": repo.active_branch.name,
         "base": base_branch
     }
-    response = requests.post(pr_url, headers=headers, json=data)
-    if response.status_code != 201:
-        raise Exception(f"Failed to create pull request. Error: {response.status_code} {response.text}")
+    request_with_retry("POST", pr_url, headers=headers, json=data)

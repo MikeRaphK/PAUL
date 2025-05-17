@@ -2,6 +2,7 @@ from langchain_community.callbacks.openai_info import OpenAICallbackHandler
 from langchain_community.tools import ReadFileTool, WriteFileTool, ListDirectoryTool
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
+from langgraph.errors import GraphRecursionError
 
 import json
 import os
@@ -19,7 +20,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 if __name__ == "__main__":
     # Read arguments
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 4:
         print(f"Usage: python {sys.argv[0]} <GitHub URL> <Issue Number>")
         sys.exit(1)
 
@@ -45,28 +46,24 @@ if __name__ == "__main__":
     if not current_issue:
         print(f"Issue number {issue_number} not found in {repo_url}. Exiting...")
         sys.exit(1)
-    print(current_issue)
-    exit(0)
 
     # Clone repo
-    print("Cloning repo...\n")
     repo_path = "./cloned_repo/"
     repo = ghu.clone_repo(repo_url, repo_path)
 
     # Create (or checkout) to the new branch
-    branch_name = "llm-patcher"
-    print(f"Branching to '{branch_name}'...\n")
+    branch_name = "PAUL-branch" + "_" + sys.argv[3]
+    print(f"\nBranching to '{branch_name}'...\n")
     if branch_name in [b.name for b in repo.branches]:
         repo.git.checkout(branch_name)
-        repo.git.pull()
     else:
         repo.git.checkout("-b", branch_name)
 
     # Create the graph
     print("Initializing ReAct graph...\n")
     callback = OpenAICallbackHandler()
-    model = ChatOpenAI(model="gpt-4o-mini", openai_api_key=OPENAI_API_KEY, callbacks=[callback])
-    tools = [ReadFileTool(verbose=True), WriteFileTool(verbose=True), ListDirectoryTool(verbose=True)]
+    model = ChatOpenAI(model="gpt-4o-mini", openai_api_key=OPENAI_API_KEY, callbacks=[callback], request_timeout=15.0)
+    tools = [ReadFileTool(), WriteFileTool(), ListDirectoryTool()]
     APP = build_graph(tools=tools, llm=model)
 
     # Initialize system message and query
@@ -84,6 +81,7 @@ if __name__ == "__main__":
             2. Prefer minimal, safe, and testable changes.
             3. Do not introduce unrelated modifications.
             4. Assume the repository uses standard Git practices.
+            5. Only use tools when strictly necessary, otherwise end the conversation.
         Respond with a JSON object containing the following fields:
             - "modified_files": The list of modified files.
             - "commit_msg": The commit message.
@@ -99,10 +97,14 @@ if __name__ == "__main__":
     chat_history.append(query)
 
     # Invoke the LLM
-    print("Invoking LLM...")
-    output_state = APP.invoke({"messages" : chat_history})
+    print("Invoking LLM...\n")
+    try:
+        output_state = APP.invoke({"messages" : chat_history})
+    except GraphRecursionError as e:
+        print(f"Failed to provide a solution(recursion limit hit). Exiting...\n")
+        sys.exit(1)
     content = output_state["messages"][-1].content
-    print(f"\n\nChatGPT response: {content}\n")
+    print(f"ChatGPT response: {content}\n")
     print(f"{callback}\n")
 
     # Create a pull request
@@ -114,4 +116,4 @@ if __name__ == "__main__":
         content = re.sub(r"\s*```$", "", content)
     content_json = json.loads(content)
     ghu.create_pr(repo, content_json["commit_msg"], owner, repo_name, GITHUB_TOKEN, content_json["pr_title"], content_json["pr_body"], default_branch)
-    print("Pull request created successfully!")    
+    print("\nPull request created successfully!")    
