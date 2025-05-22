@@ -1,71 +1,38 @@
+from git import Repo
+from typing import Dict, Tuple
+
 import os
 import re
-import requests
 import shutil
 import subprocess
 import time
 
-from git import Repo
-from requests.adapters import HTTPAdapter
-from typing import Any, List, Dict, Tuple
-from urllib3.util.retry import Retry
-
-def request_with_retry(method: str, url: str, retries: int = 3, timeout: int = 5, **kwargs: Any) -> requests.Response:
-    """
-    Performs an HTTP request with retry and timeout logic.
-
-    Args:
-        method (str): The HTTP method to use (e.g., 'GET', 'POST', etc.).
-        url (str): The URL to send the request to.
-        retries (int, optional): Number of retry attempts. Defaults to 3.
-        timeout (int, optional): Timeout for the request in seconds. Defaults to 5.
-        **kwargs (Any): Additional keyword arguments to pass to requests.request(), such as headers, json, data, etc.
-
-    Returns:
-        requests.Response: The response object if the request succeeds.
-
-    Raises:
-        Exception: If the request fails after all retries.
-    """
-    retry_strategy = Retry(
-        total=retries,
-        backoff_factor=1,
-        status_forcelist=[429, 500, 502, 503, 504],
-        allowed_methods=[method]
-    )
-
-    adapter = HTTPAdapter(max_retries=retry_strategy)
-    session = requests.Session()
-    session.mount("http://", adapter)
-    session.mount("https://", adapter)
-
-    try:
-        response = session.request(method=method, url=url, timeout=timeout, **kwargs)
-        response.raise_for_status()
-        return response
-    except requests.exceptions.RequestException as e:
-        msg = f"Request {method} error for {url}"
-        if hasattr(e, 'response') and e.response is not None:
-            msg += f": {e.response.status_code} {e.response.text}"
-        raise Exception(msg) from e
+from .utils import request_with_retry
 
 
 
 def parse_owner_name_default_branch(repo_url: str, GITHUB_TOKEN: str) -> Tuple[str, str, str]:
     """
-    Parse the owner, repository name, and default branch from a GitHub repository URL.
+    Parses the owner, repository name, and default branch from a GitHub repository URL.
 
     Args:
-        repo_url (str): The GitHub repository URL.
+        repo_url (str): The full HTTPS URL of the GitHub repository (e.g., 'https://github.com/user/repo').
+        GITHUB_TOKEN (str): A valid GitHub token with permission to access the repository metadata.
 
     Returns:
-        Tuple[str, str, str]: A tuple containing the repository owner, name, and default branch.
-        If the URL is invalid or the repo is not found, returns (None, None, None).
+        Tuple[str, str, str]: A tuple containing:
+            - owner (str): The GitHub username or organization.
+            - repo (str): The repository name.
+            - default_branch (str): The repository's default branch (usually 'main' or 'master').
+
+    Raises:
+        ValueError: If the given URL does not match the expected GitHub format.
+        requests.RequestException: If the GitHub API request fails after retries.
     """
     # Try to get the owner and repo name from the URL
     match = re.match(r'https?://github\.com/([^/]+)/([^/]+)(?:/|$)', repo_url)
     if not match:
-        return None, None
+        raise ValueError(f"Invalid GitHub repository URL: {repo_url}")
     owner, repo =  match.group(1), match.group(2)
 
     # Try to get the default branch
@@ -77,29 +44,38 @@ def parse_owner_name_default_branch(repo_url: str, GITHUB_TOKEN: str) -> Tuple[s
 
 
 
-def get_open_issues(owner: str, name: str) -> List[Dict[str, str]]:
+def get_issue(owner: str, name: str, issue_number : int) -> Dict[str, str]:
     """
-    Get open issues from a GitHub repository.
+    Retrieves a specific open issue from a GitHub repository by its issue number.
 
     Args:
-        owner (str): The owner of the repository.
+        owner (str): The GitHub username or organization that owns the repository.
         name (str): The name of the repository.
+        issue_number (int): The number of the issue to retrieve.
 
     Returns:
-        List[Dict[str, str]]: A list of open issues, each as a dictionary with 'title', 'body' and 'number'.
+        Dict[str, str]: A dictionary representing the issue.
+
+    Raises:
+        ValueError: If the specified issue number is not found among open issues.
+        requests.RequestException: If the GitHub API request fails.
     """
     issues_url = f"https://api.github.com/repos/{owner}/{name}/issues"
     params = {'state': 'open', 'per_page': 100}
     response = request_with_retry("GET", issues_url, params=params)
     
-    # Get title, body and number of each issue while ignoring pull requests
-    issues = []
-    for issue in response.json():
-        if 'pull_request' not in issue:
-            element = {"title": issue["title"], "body": issue.get("body", ""), "number": issue["number"]}
-            issues.append(element)
-            
-    return issues
+    # Iterate over open issues, skipping pull requests until we find the one we want
+    issue = None
+    for current_issue in response.json():
+        if 'pull_request' in current_issue:
+            continue
+        if current_issue['number'] == issue_number:
+            issue = current_issue
+            break
+
+    if not issue:
+        raise ValueError(f"Issue number {issue_number} not found in {owner}/{name}.")
+    return issue
 
 
 
