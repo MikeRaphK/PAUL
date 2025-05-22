@@ -160,6 +160,8 @@ def create_pr(repo: Repo, commit_msg:str, owner: str, repo_name: str, GITHUB_TOK
         base_branch (str): The name of the branch to merge into (usually 'main' or 'master').
     """
     # Git add, commit, and push with retry policy
+    authed_url = f"https://x-access-token:{GITHUB_TOKEN}@github.com/{owner}/{repo_name}.git"
+    repo.git.remote("set-url", "origin", authed_url)
     repo.git.add(".")
     repo.index.commit(commit_msg)
     branch = repo.active_branch.name
