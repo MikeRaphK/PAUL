@@ -14,9 +14,15 @@ import github_utils as ghu
 from build_graph import build_graph
 
 # Load from .env
-load_dotenv()
+load_dotenv(override=False)
+
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+if not GITHUB_TOKEN:
+    raise ValueError("GITHUB_TOKEN is not set.")
+
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY is not set.")
 
 if __name__ == "__main__":
     # Read arguments
