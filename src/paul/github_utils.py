@@ -3,7 +3,6 @@ from typing import Dict, Tuple
 
 import os
 import re
-import shutil
 import subprocess
 import time
 
@@ -100,7 +99,7 @@ def clone_repo(repo_url: str, repo_path: str, timeout: float = 15.0, max_retries
         try:
             # Clean up old clone
             if os.path.exists(repo_path):
-                shutil.rmtree(repo_path)
+                subprocess.run(['rm', '-rf', repo_path], check=True)
             
             # Attempt to clone with a timeout
             subprocess.run(["git", "clone", repo_url, repo_path], check=True, timeout=timeout)
