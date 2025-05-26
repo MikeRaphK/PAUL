@@ -1,0 +1,25 @@
+name: "PAUL - Patch Automation Using LLMs"
+description: "Automatically analyzes an issue and creates a PR suggestion"
+author: "Michael-Raphael Kostagiannis"
+inputs:
+  repo_url:
+    description: "GitHub repository URL"
+    required: true
+  issue_number:
+    description: "The issue number"
+    required: true
+  openai-api-key:
+    description: "OpenAI API Key"
+    required: true
+  github-token:
+    description: "GitHub Token for creating PRs"
+    required: true
+runs:
+  using: "docker"
+  image: "Dockerfile"
+  args:
+    - ${{ inputs.repo_url }}
+    - ${{ inputs.issue_number }}
+  env:
+    OPENAI_API_KEY: ${{ inputs.openai-api-key }}
+    GITHUB_TOKEN: ${{ inputs.github-token }}
