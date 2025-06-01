@@ -6,6 +6,7 @@ on:
       issue_number:
         description: "Issue Number"
         required: true
+        
   issues:
     types: [opened, reopened]
 
