@@ -15,8 +15,12 @@ inputs:
     description: 'Issue number (int)'
     required: true
 
-  openai_api_key:
-    description: 'OpenAI API key'
+  openai-api-key:
+    description: "OpenAI API Key"
+    required: true
+
+  github-token:
+    description: "GitHub Token for creating PRs"
     required: true
 
 runs:
@@ -30,5 +34,5 @@ runs:
     - --issue
     - ${{ inputs.issue }}
   env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    OPENAI_API_KEY: ${{ inputs.openai_api_key }}
+    OPENAI_API_KEY: ${{ inputs.openai-api-key }}
+    GITHUB_TOKEN: ${{ inputs.github-token }}
