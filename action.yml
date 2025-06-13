@@ -20,27 +20,15 @@ inputs:
     required: true
 
 runs:
-  using: "composite"
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Setup Python 3.12
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-
-    - name: Install dependencies
-      run: pip install -r requirements.txt
-      shell: bash
-
-    - name: Run PAUL
-      run: |
-        python main.py \
-          --owner ${{ inputs.owner }} \
-          --repo ${{ inputs.repo }} \
-          --issue ${{ inputs.issue }}
-      shell: bash
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
-        OPENAI_API_KEY: ${{ inputs.openai_api_key }}
+  using: "docker"
+  image: "Dockerfile"
+  args:
+    - --owner
+    - ${{ inputs.owner }}
+    - --repo
+    - ${{ inputs.repo }}
+    - --issue
+    - ${{ inputs.issue }}
+  env:
+    GITHUB_TOKEN: ${{ github.token }}
+    OPENAI_API_KEY: ${{ inputs.openai_api_key }}
