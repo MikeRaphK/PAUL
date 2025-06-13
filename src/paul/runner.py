@@ -10,7 +10,7 @@ import uuid
 
 from . import github_utils as ghu
 from .graph_builder import build_graph
-
+from github import Github
 
 
 def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, OPENAI_API_KEY: str) -> None:
@@ -18,16 +18,22 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
     print(f"Owner: {owner}")
     print(f"Repo: {repo_name}")
     print(f"Issue Number: {issue_number}")
+    gh = Github(GITHUB_TOKEN)
+
+    # Get issue
+    repo = gh.get_repo(f"{owner}/{repo_name}")
+    issue = repo.get_issue(number=issue_number)
+
+    # Print out info
+    print(f"Issue Title: {issue.title}")
+    print(f"Issue Body: {issue.body}")
+    print(f"Labels: {[label.name for label in issue.labels]}")
+    print(f"State: {issue.state}")
+    print(f"Author: {issue.user.login}")
+
     print("Exiting PAUL...")
     exit()
 
-    # Get issue
-    print(f"Getting issue #{issue_number}...\n")
-    issue = ghu.get_issue(owner, repo_name, issue_number)
-
-    # Clone repo
-    repo_path = "./cloned_repo/"
-    repo = ghu.clone_repo(repo_url, repo_path)
 
     # Create new branch
     branch_name = f"PAUL-branch-{uuid.uuid4().hex[:8]}"
