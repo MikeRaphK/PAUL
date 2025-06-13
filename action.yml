@@ -30,5 +30,5 @@ runs:
     - --issue
     - ${{ inputs.issue }}
   env:
-    GITHUB_TOKEN: ${{ github.token }}
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     OPENAI_API_KEY: ${{ inputs.openai_api_key }}
