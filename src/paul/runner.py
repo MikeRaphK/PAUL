@@ -25,7 +25,8 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
     os.chdir("/github/workspace")
     print("Current working directory:", os.getcwd())
     print("Directory contents:", os.listdir("."))
-    assert os.path.isdir(".git"), "No .git directory found!"
+    os.environ["GIT_DIR"] = os.path.abspath(".git")
+    os.environ["GIT_WORK_TREE"] = os.getcwd()
     run(["git", "config", "user.email", "paul-bot@users.noreply.github.com"], check=True)
     run(["git", "config", "user.name", "paul-bot"], check=True)
     gh = Github(GITHUB_TOKEN)
