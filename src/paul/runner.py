@@ -10,17 +10,16 @@ import uuid
 
 from . import github_utils as ghu
 from .graph_builder import build_graph
-from .utils import check_env_vars
 
 
 
-def run_paul(repo_url: str, issue_number: int) -> None:
-    # Check environment variables
-    GITHUB_TOKEN, OPENAI_API_KEY = check_env_vars()
-    
-    # Get repo URL and check if it is valid
-    print("Checking if the GitHub URL is valid...\n")
-    owner, repo_name, default_branch = ghu.parse_owner_name_default_branch(repo_url, GITHUB_TOKEN)
+def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, OPENAI_API_KEY: str) -> None:
+    print("Starting PAUL...")
+    print(f"Owner: {owner}")
+    print(f"Repo: {repo_name}")
+    print(f"Issue Number: {issue_number}")
+    print("Exiting PAUL...")
+    exit()
 
     # Get issue
     print(f"Getting issue #{issue_number}...\n")

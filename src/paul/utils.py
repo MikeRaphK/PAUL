@@ -1,4 +1,3 @@
-from dotenv import load_dotenv
 from requests.adapters import HTTPAdapter
 from typing import Any, Tuple
 from urllib3.util.retry import Retry
@@ -18,10 +17,6 @@ def check_env_vars() -> Tuple[str, str]:
     Raises:
         ValueError: If either `GITHUB_TOKEN` or `OPENAI_API_KEY` is not set.
     """
-
-    # Load from .env without overriding existing variables
-    # This allows usage inside and outside of GitHub Actions
-    load_dotenv(override=False) 
 
     GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
     if not GITHUB_TOKEN:
