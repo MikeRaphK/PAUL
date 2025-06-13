@@ -5,12 +5,14 @@ from langchain_openai import ChatOpenAI
 from langgraph.errors import GraphRecursionError
 
 import json
+import os
 import re
 import uuid
 
 from . import github_utils as ghu
 from .graph_builder import build_graph
 from github import Github
+from subprocess import run
 
 
 def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, OPENAI_API_KEY: str) -> None:
@@ -18,27 +20,21 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
     print(f"Owner: {owner}")
     print(f"Repo: {repo_name}")
     print(f"Issue Number: {issue_number}")
+
+    # Set up git environment
+    os.chdir("/github/workspace")
+    run(["git", "config", "user.email", "paul-bot@users.noreply.github.com"], check=True)
+    run(["git", "config", "user.name", "paul-bot"], check=True)
     gh = Github(GITHUB_TOKEN)
 
     # Get issue
     repo = gh.get_repo(f"{owner}/{repo_name}")
     issue = repo.get_issue(number=issue_number)
 
-    # Print out info
-    print(f"Issue Title: {issue.title}")
-    print(f"Issue Body: {issue.body}")
-    print(f"Labels: {[label.name for label in issue.labels]}")
-    print(f"State: {issue.state}")
-    print(f"Author: {issue.user.login}")
-
-    print("Exiting PAUL...")
-    exit()
-
-
     # Create new branch
     branch_name = f"PAUL-branch-{uuid.uuid4().hex[:8]}"
     print(f"\nBranching to '{branch_name}'...\n")
-    repo.git.checkout("-b", branch_name)
+    run(["git", "checkout", "-b", branch_name], check=True)
 
     # Create the graph
     print("Initializing ReAct graph...\n")
@@ -51,23 +47,44 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
     print("Initializing chat history...\n")
     chat_history = []
     system_message = SystemMessage(content="""
-        You are an AI software engineer. Your task is to automatically fix issues in a local GitHub repository located at ./cloned_repo. For each task:
-            1. Read and understand the GitHub issue provided to you.
-            2. Locate the relevant part(s) of the codebase inside ./cloned_repo that need to be changed.
-            3. Modify the code to resolve the issue while maintaining functionality, clarity, and style.
-            4. Generate a concise and informative git commit message describing the fix.
-            5. Prepare a pull request summary explaining what was fixed, how it was fixed, and any tests added or run.
-        Constraints:
-            1. Only make changes necessary to fix the issue.
-            2. Prefer minimal, safe, and testable changes.
-            3. Do not introduce unrelated modifications.
-            4. Assume the repository uses standard Git practices.
-            5. Only use tools when strictly necessary, otherwise end the conversation.
-        Respond with a JSON object containing the following fields:
-            - "modified_files": The list of modified files.
-            - "commit_msg": The commit message.
-            - "pr_title": The pull request title.
-            - "pr_body": The pull request body. Do not include the issue number in the body.
+    You are PAUL, an AI-powered GitHub developer assistant.
+    Your job is to automatically resolve issues in a local repository that has already been cloned to /github/workspace.
+
+    Given the following:
+    - The full GitHub issue (including number, title, and body)
+    - Complete read/write access to the repository files and standard developer tools
+
+    Follow this workflow:
+    1. **Understand the Issue:** Carefully read the issue title, body, and number to determine what needs to be fixed or implemented.
+    2. **Locate Relevant Code:** Identify which file(s) in the codebase are related to the issue and require modification.
+    3. **Apply the Patch:** Make only the changes necessary to address the issue. Ensure your code is clear, correct, and matches the project’s coding style.
+    4. **Test:** If possible, verify that your fix works (e.g., run tests, add a minimal test if relevant, or explain what you did to verify).
+    5. **Prepare the Commit:** Write a concise, informative commit message describing the change. The message should be suitable for inclusion in the main branch’s history.
+    6. **Draft a Pull Request:** Write a clear pull request title and body. The title should summarize the fix; the body should explain what was changed and why. Do **not** include the issue number in the body.
+
+    **Constraints:**
+    - Make the minimal necessary change to resolve the issue—avoid unrelated edits.
+    - Maintain or improve code readability and safety.
+    - Only use developer tools (such as code editing, git operations, etc.) when required.
+    - Output must be in the required JSON format, with all fields present.
+
+    **Your response must be a JSON object with these fields:**
+    - `modified_files`: List of modified file paths (relative to the repo root).
+    - `commit_msg`: A clear, concise commit message.
+    - `pr_title`: The pull request title.
+    - `pr_body`: The pull request body (do not mention the issue number in the body).
+
+    Example response:
+    ```json
+    {
+    "modified_files": ["src/app.py"],
+    "commit_msg": "Fix division by zero error in app.py",
+    "pr_title": "Fix division by zero in app calculation",
+    "pr_body": "This PR fixes a bug in app.py that could cause a division by zero when processing empty input. A conditional check was added to prevent the error."
+    }
+    ```
+                                   
+    Do not include any explanation or extra commentary outside the JSON. Only output the JSON object.
     """)
     chat_history.append(system_message)
     query = HumanMessage(content=f"""
@@ -84,9 +101,10 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
     except GraphRecursionError as e:
         raise RuntimeError("Failed to provide a solution due to recursion limit. Exiting...") from e
     content = output_state["messages"][-1].content
+    print("LLM response received:\n")
+    print(content)
 
     print("Creating pull request...\n")
-
     # Remove leading and trailing fences
     content = content.strip()
     if content.startswith("```"):
@@ -100,5 +118,12 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
     content_json["pr_body"] += f"Tokens Used: {callback.total_tokens}\n"
     content_json["pr_body"] += f"Successful Requests: {callback.successful_requests}\n"
     content_json["pr_body"] += f"Total Cost (USD): {callback.total_cost:.6f}\n"
+
+    for key, value in content_json.items():
+        print(f"{key}: {value}\n")
+
+    print("Exiting PAUL...")
+    exit()
+    
     ghu.create_pr(repo, content_json["commit_msg"], owner, repo_name, GITHUB_TOKEN, content_json["pr_title"], content_json["pr_body"], default_branch)
     print("\nPull request created successfully!")    
