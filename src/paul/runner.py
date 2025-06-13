@@ -92,9 +92,9 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
     """)
     chat_history.append(system_message)
     query = HumanMessage(content=f"""
-        Issue Title: {issue['title']}
-        Issue Body: {issue['body']}
-        Issue Number: {issue['number']}
+        Issue Title: {issue.title}
+        Issue Body: {issue.body}
+        Issue Number: {issue.number}
     """)
     chat_history.append(query)
 
