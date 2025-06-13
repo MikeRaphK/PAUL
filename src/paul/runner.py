@@ -23,6 +23,9 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
 
     # Set up git environment
     os.chdir("/github/workspace")
+    print("Current working directory:", os.getcwd())
+    print("Directory contents:", os.listdir("."))
+    assert os.path.isdir(".git"), "No .git directory found!"
     run(["git", "config", "user.email", "paul-bot@users.noreply.github.com"], check=True)
     run(["git", "config", "user.name", "paul-bot"], check=True)
     gh = Github(GITHUB_TOKEN)
@@ -124,6 +127,6 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
 
     print("Exiting PAUL...")
     exit()
-    
+
     ghu.create_pr(repo, content_json["commit_msg"], owner, repo_name, GITHUB_TOKEN, content_json["pr_title"], content_json["pr_body"], default_branch)
     print("\nPull request created successfully!")    
