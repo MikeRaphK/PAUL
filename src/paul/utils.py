@@ -94,7 +94,6 @@ def create_pull_request(content_json: Dict[str, str], branch_name: str, repo: Re
     """
 
     # Commit and push
-    print("Committing and pushing...\n")
     run(["git", "add", "."], check=True)
     run(["git", "commit", "-m", content_json["commit_msg"]], check=True)
     run(["git", "push", "--set-upstream", "origin", branch_name], check=True)
