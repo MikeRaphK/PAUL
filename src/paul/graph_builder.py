@@ -22,7 +22,7 @@ class State(TypedDict):
     messages : Annotated[list, add_messages]
 
 
-def build_graph(tools : list[Callable], llm : ChatOpenAI, callbacks=None) -> CompiledStateGraph:
+def build_graph(tools : list[Callable], llm : ChatOpenAI) -> CompiledStateGraph:
     """Builds and returns a simple ReAct graph.
 
     Args:
@@ -56,7 +56,7 @@ def build_graph(tools : list[Callable], llm : ChatOpenAI, callbacks=None) -> Com
     graph.set_entry_point("prompt_node")
 
     # Tool Node
-    tool_node = ToolNode(tools, callbacks=callbacks)
+    tool_node = ToolNode(tools)
     graph.add_node("tool_node", tool_node)
     graph.add_edge("tool_node", "prompt_node")
 

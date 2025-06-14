@@ -31,7 +31,7 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
     tool_logger = ToolLogger()
     model = ChatOpenAI(model="gpt-4o-mini", openai_api_key=OPENAI_API_KEY, callbacks=[token_logger])
     tools = [ReadFileTool(), WriteFileTool(), ListDirectoryTool()]
-    APP = build_graph(tools=tools, llm=model, callbacks=[tool_logger])
+    APP = build_graph(tools=tools, llm=model)
 
     print("Initializing chat history...\n")
     chat_history = []
@@ -85,7 +85,7 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
 
     print("Invoking LLM...\n")
     try:
-        output_state = APP.invoke({"messages" : chat_history})
+        output_state = APP.invoke({"messages" : chat_history}, callbacks=[tool_logger])
     except GraphRecursionError as e:
         raise RuntimeError("Failed to provide a solution due to recursion limit. Exiting...") from e
     content = output_state["messages"][-1].content
