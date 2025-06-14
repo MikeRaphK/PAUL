@@ -29,9 +29,9 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
     print("Initializing ReAct graph...\n")
     token_logger = OpenAICallbackHandler()
     tool_logger = ToolLogger()
-    model = ChatOpenAI(model="gpt-4o-mini", openai_api_key=OPENAI_API_KEY, callbacks=[token_logger, tool_logger])
+    model = ChatOpenAI(model="gpt-4o-mini", openai_api_key=OPENAI_API_KEY, callbacks=[token_logger])
     tools = [ReadFileTool(), WriteFileTool(), ListDirectoryTool()]
-    APP = build_graph(tools=tools, llm=model)
+    APP = build_graph(tools=tools, llm=model, callbacks=[tool_logger])
 
     print("Initializing chat history...\n")
     chat_history = []
