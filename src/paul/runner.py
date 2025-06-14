@@ -5,6 +5,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.errors import GraphRecursionError
 
 from .graph_builder import build_graph
+from .tool_logger import ToolLogger
 from .utils import setup_git_environment, parse_paul_response, create_pull_request
 from github import Github
 from subprocess import run
@@ -26,8 +27,9 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
     run(["git", "checkout", "-b", branch_name], check=True)
 
     print("Initializing ReAct graph...\n")
-    callback = OpenAICallbackHandler()
-    model = ChatOpenAI(model="gpt-4o-mini", openai_api_key=OPENAI_API_KEY, callbacks=[callback], request_timeout=15.0)
+    token_logger = OpenAICallbackHandler()
+    tool_logger = ToolLogger()
+    model = ChatOpenAI(model="gpt-4o-mini", openai_api_key=OPENAI_API_KEY, callbacks=[token_logger, tool_logger])
     tools = [ReadFileTool(), WriteFileTool(), ListDirectoryTool()]
     APP = build_graph(tools=tools, llm=model)
 
@@ -89,7 +91,7 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
     content = output_state["messages"][-1].content
     
     print("Creating pull request...\n")
-    content_json = parse_paul_response(content, issue_number, callback)
+    content_json = parse_paul_response(content, issue_number, token_logger, tool_logger)
     pr = create_pull_request(content_json, branch_name, repo)
     
     print(f"Pull request successfully created: {pr.html_url}")
