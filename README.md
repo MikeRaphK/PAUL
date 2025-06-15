@@ -1,59 +1,42 @@
 # PAUL – Patch Automation Using LLMs
 
-**PAUL** (Patch Automation Using LLMs) is a developer tool that leverages Large Language Models to automatically address GitHub issues by reading, understanding, and patching codebases. With a single command, PAUL clones a GitHub repository, analyzes a given issue, and generates a targeted code fix, complete with a commit message and pull request.
-
-## Overview
-PAUL stands for Patch Automation Using LLMs. It simplifies the process of code maintenance and issue resolution for developers by automating the patching process of software projects via intelligent parsing of GitHub issues.
-
-## Setup
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/MikeRaphK/PAUL.git
-   cd PAUL
-   ```
-
-2. Create a `.env` file and add your credentials:
-   ```bash
-   GITHUB_TOKEN=your_github_token
-   OPENAI_API_KEY=your_openai_api_key
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Build and run the Docker container locally:
-   ```bash
-   docker build -t paul .
-   docker run -it -e GITHUB_TOKEN=${GITHUB_TOKEN} -e OPENAI_API_KEY=${OPENAI_API_KEY} paul
-   ```
+**PAUL** (Patch Automation Using LLMs) is a developer tool that leverages Large Language Models to automatically address GitHub issues by reading, understanding, and patching codebases. Every time an issue is opened, PAUL analyzes it and generates a targeted code fix, complete with a commit message and pull request.
 
 ## GitHub Actions Integration
 
 To use PAUL as a GitHub action in another repository, include the following workflow configuration as `.github/workflows/run-paul.yml`:
 ```yml
-name: Run PAUL
+name: "Run PAUL"
 
 on:
+  # Workflow can be triggered with a click of a button. User inputs issue number.
   workflow_dispatch:
     inputs:
       issue_number:
         description: "Issue Number"
         required: true
+  # Workflow is triggered automatically when an issue is opened/reopened
   issues:
     types: [opened, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   run-paul:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Run PAUL
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run PAUL Action
         uses: MikeRaphK/PAUL@main
         with:
-          repo_url: https://github.com/${{ github.repository }}
-          issue_number: ${{ github.event.issue.number || github.event.inputs.issue_number }}
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+          issue: ${{ github.event.issue.number || inputs.issue_number }}
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           github-token: ${{ secrets.PAUL_GITHUB_TOKEN }}
 ```
@@ -67,17 +50,10 @@ When using PAUL, you need to set the following environment variables in your sys
 
 To add these as GitHub Secrets, navigate to your repository on GitHub, go to Settings > Secrets and variables > Actions > New repository secret.
 
-## Usage
-```bash
-python main.py <GitHub Repository URL> <Issue Number>
-```
-
-Example:
-```bash
-python main.py https://github.com/yourusername/myproject 17
-```
+After setting up, open up a GitHub issue and PAUL will provide his help!
 
 ## Mermaid Chart
+The chart outlines PAUL's workflow that works on GitHub repositories. It’s a linear process with a single main feedback loop for tool utilization.
 ```mermaid
 flowchart LR
     A[Get Open Issues] --> B[Clone Repo Locally];
@@ -89,11 +65,5 @@ flowchart LR
     T -->|Here's a tool call| P
 ```
 
-## Additional Notes
-The mermaid chart above illustrates the flow that PAUL follows in order to process GitHub issues and generate patches. Each step is crucial and contributes to the effective automation of the patching process.
-
 ## License
 MIT License
-
-## Additional Information
-For more details on how to contribute or troubleshoot, please refer to the [contributing guidelines](CONTRIBUTING.md) or check the [issues](https://github.com/MikeRaphK/PAUL/issues) page for commonly reported issues and their solutions.
