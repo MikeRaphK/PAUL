@@ -5,6 +5,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.errors import GraphRecursionError
 
 from .graph_builder import build_graph
+from .pytest_tool import pytest_tool
 from .utils import setup_git_environment, parse_paul_response, create_pull_request
 from github import Github
 from subprocess import run
@@ -22,13 +23,12 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
     issue = repo.get_issue(number=issue_number)
 
     branch_name = f"PAUL-branch-{uuid.uuid4().hex[:8]}"
-    print(f"Branching to '{branch_name}'...\n")
     run(["git", "checkout", "-b", branch_name], check=True)
 
     print("Initializing ReAct graph...\n")
     token_logger = OpenAICallbackHandler()
     model = ChatOpenAI(model="gpt-4o-mini", openai_api_key=OPENAI_API_KEY, callbacks=[token_logger])
-    tools = [ReadFileTool(), WriteFileTool(), ListDirectoryTool()]
+    tools = [ReadFileTool(), WriteFileTool(), ListDirectoryTool(), pytest_tool]
     APP = build_graph(tools=tools, llm=model)
 
     print("Initializing chat history...\n")

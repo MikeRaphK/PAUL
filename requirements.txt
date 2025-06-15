@@ -4,3 +4,4 @@ langchain_openai==0.3.23
 langgraph==0.4.8
 PyGithub==2.6.1
 typing_extensions==4.14.0
+pytest
