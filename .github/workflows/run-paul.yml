@@ -1,15 +1,15 @@
 name: "Run PAUL"
 
 on:
+  # Workflow is triggered automatically when an issue is opened, reopened, labeled, or edited.
+  issues:
+    types: [opened, reopened, labeled, edited]
   # Workflow can be triggered with a click of a button. User inputs issue number.
   workflow_dispatch:
     inputs:
       issue_number:
         description: "Issue Number"
         required: true
-  # Workflow is triggered automatically when an issue is opened/reopened
-  issues:
-    types: [opened, reopened]
 
 permissions:
   contents: write

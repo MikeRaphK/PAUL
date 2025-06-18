@@ -21,6 +21,10 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
     print(f"Getting issue #{issue_number}...")
     repo = gh.get_repo(f"{owner}/{repo_name}")
     issue = repo.get_issue(number=issue_number)
+    label_names = [label.name for label in issue.labels]
+    if 'PAUL' not in label_names:
+        print("No 'PAUL' label found. Exiting...")
+        return
 
     branch_name = f"PAUL-branch-{uuid.uuid4().hex[:8]}"
     run(["git", "checkout", "-b", branch_name], check=True)
