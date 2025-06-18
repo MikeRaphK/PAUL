@@ -17,7 +17,7 @@ on:
         required: true
   # Workflow is triggered automatically when an issue is opened/reopened
   issues:
-    types: [opened, reopened]
+    types: [opened, reopened, labeled, edited]
 
 permissions:
   contents: write
