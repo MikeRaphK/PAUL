@@ -12,10 +12,11 @@ if __name__ == "__main__":
     parser.add_argument('--owner', required=True, help='GitHub repository owner username', metavar='USERNAME')
     parser.add_argument('--repo', required=True, help='Repository name', metavar='REPO NAME')
     parser.add_argument('--issue', required=True, type=int, help='Issue number (int)', metavar='NUMBER')
+    parser.add_argument('--model', default="gpt-4o-mini", help='OpenAI model to use (default: gpt-4o-mini)', metavar='MODEL')
     args = parser.parse_args()
 
     # Check environment variables
     GITHUB_TOKEN, OPENAI_API_KEY = check_env_vars()
 
     # Run PAUL with the provided arguments
-    run_paul(args.owner, args.repo, args.issue, GITHUB_TOKEN, OPENAI_API_KEY)
+    run_paul(args.owner, args.repo, args.issue, GITHUB_TOKEN, OPENAI_API_KEY, args.model)

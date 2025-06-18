@@ -31,3 +31,4 @@ jobs:
           issue: ${{ github.event.issue.number || inputs.issue_number }}
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
           github-token: ${{ secrets.PAUL_GITHUB_TOKEN }}
+          model: "gpt-4o-mini"

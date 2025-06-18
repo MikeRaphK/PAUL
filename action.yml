@@ -23,6 +23,11 @@ inputs:
     description: "GitHub Token for creating PRs"
     required: true
 
+  model:
+    description: "OpenAI model to use (default: gpt-4o-mini)"
+    required: false
+    default: "gpt-4o-mini"
+
 runs:
   using: "docker"
   image: "docker://ghcr.io/mikeraphk/paul:latest"
@@ -33,6 +38,8 @@ runs:
     - ${{ inputs.repo }}
     - --issue
     - ${{ inputs.issue }}
+    - --model
+    - ${{ inputs.model }}
   env:
     OPENAI_API_KEY: ${{ inputs.openai-api-key }}
     GITHUB_TOKEN: ${{ inputs.github-token }}

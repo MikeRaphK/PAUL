@@ -13,7 +13,7 @@ from subprocess import run
 import uuid
 
 
-def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, OPENAI_API_KEY: str) -> None:
+def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, OPENAI_API_KEY: str, model_name: str) -> None:
     print("Waking PAUL up...\n")
     setup_git_environment()
     gh = Github(GITHUB_TOKEN)
@@ -31,9 +31,9 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
 
     print("Initializing ReAct graph...\n")
     token_logger = OpenAICallbackHandler()
-    model = ChatOpenAI(model="gpt-4o-mini", openai_api_key=OPENAI_API_KEY, callbacks=[token_logger])
+    llm = ChatOpenAI(model=model_name, openai_api_key=OPENAI_API_KEY, callbacks=[token_logger])
     tools = [ReadFileTool(), WriteFileTool(), ListDirectoryTool(), pytest_tool]
-    APP = build_graph(tools=tools, llm=model)
+    APP = build_graph(tools=tools, llm=llm)
 
     print("Initializing chat history...\n")
     chat_history = []
@@ -90,7 +90,6 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
         output_state = APP.invoke({"messages" : chat_history})
     except GraphRecursionError as e:
         raise RuntimeError("Failed to provide a solution due to recursion limit. Exiting...") from e
-    content = output_state["messages"][-1].content
     
     print("Creating pull request...\n")
     content_json = parse_paul_response(output_state["messages"], issue_number, token_logger)
