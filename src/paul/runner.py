@@ -89,7 +89,7 @@ def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, O
     content = output_state["messages"][-1].content
     
     print("Creating pull request...\n")
-    content_json = parse_paul_response(content, issue_number, token_logger)
+    content_json = parse_paul_response(output_state["messages"], issue_number, token_logger)
     pr = create_pull_request(content_json, branch_name, repo)
     
     print(f"Pull request successfully created: {pr.html_url}")
