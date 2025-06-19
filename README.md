@@ -54,6 +54,7 @@ After setting up, open up a GitHub issue and PAUL will provide his help!
 
 ## Mermaid Chart
 The chart outlines PAUL's workflow that works on GitHub repositories. It’s a linear process with a single main feedback loop for tool utilization.
+
 ```mermaid
 flowchart LR
     A[Get Open Issues] --> B[Clone Repo Locally];
@@ -64,6 +65,22 @@ flowchart LR
     P -. Done patching? -.-> E[Create Pull Request];
     T -->|Here's a tool call| P
 ```
+
+```mermaid
+graph LR
+
+  Git[Git Repository] --> PAUL
+  Commit(Commit) --> PAUL
+  Issue --> PAUL
+  TestFunction(Test Function/Module) --> PAUL
+  venv(Virtual Environment) --> PAUL
+  PAUL --> Updates[File Updates]
+  Updates --> Tester --|Everything Passes|--> Pull[Pull Request]
+  Tester --|Anything Fails|--> PAUL
+
+
+```
+
 
 ## License
 MIT License

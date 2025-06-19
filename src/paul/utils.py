@@ -29,7 +29,7 @@ def check_env_vars() -> Tuple[str, str]:
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     if not OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY is not set.")
-    
+
     return GITHUB_TOKEN, OPENAI_API_KEY
 
 
@@ -96,7 +96,6 @@ def parse_paul_response(chat_history: List[BaseMessage], issue_number: int, toke
     content_json["pr_body"] += f"Related to #{issue_number}\n"
 
     return content_json
-
 
 
 def create_pull_request(content_json: Dict[str, str], branch_name: str, repo: Repository) -> PullRequest:
