@@ -13,7 +13,7 @@ from subprocess import run
 import uuid
 
 
-def run_paul(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, OPENAI_API_KEY: str, model_name: str) -> None:
+def run_github(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, OPENAI_API_KEY: str, model_name: str) -> None:
     print("Waking PAUL up...\n")
     setup_git_environment()
     gh = Github(GITHUB_TOKEN)
