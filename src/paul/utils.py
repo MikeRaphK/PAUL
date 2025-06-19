@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from github.Repository import Repository
 from github.PullRequest import PullRequest
 from langchain_community.callbacks.openai_info import OpenAICallbackHandler
@@ -21,6 +22,7 @@ def check_env_vars() -> Tuple[str, str]:
     Raises:
         ValueError: If either `GITHUB_TOKEN` or `OPENAI_API_KEY` is not set.
     """
+    load_dotenv(override=False)
 
     GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
     if not GITHUB_TOKEN:
