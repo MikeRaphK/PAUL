@@ -1,6 +1,6 @@
-from src.paul.runners.github import run as run_github
-from src.paul.runners.local import run as run_local
-from src.paul.runners.swebench_lite import run as run_swebench_lite
+from src.paul.runners.github import run_github
+from src.paul.runners.local import run_local
+from src.paul.runners.swebench_lite import run_swebench_lite
 from src.paul.utils import parse_args, check_env_vars
 
 if __name__ == "__main__":

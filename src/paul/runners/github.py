@@ -1,6 +1,7 @@
 from github import Github
 from github.Repository import Repository
 from github.PullRequest import PullRequest
+from subprocess import run
 from typing import Dict
 
 import os
@@ -52,7 +53,7 @@ def create_pull_request(paul_response: Dict[str, str], branch_name: str, repo: R
     )
     return pr
 
-def run(owner: str, repo_name: str, issue_number: int, model: str, GITHUB_TOKEN: str, OPENAI_API_KEY: str) -> None:
+def run_github(owner: str, repo_name: str, issue_number: int, model: str, GITHUB_TOKEN: str, OPENAI_API_KEY: str) -> None:
     print("Setting up GitHub environment...\n")
     setup_git_environment()
     gh = Github(GITHUB_TOKEN)
