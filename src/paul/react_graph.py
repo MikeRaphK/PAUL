@@ -22,7 +22,7 @@ class State(TypedDict):
     messages : Annotated[list, add_messages]
 
 
-def build_graph(tools : list[Callable], llm : ChatOpenAI) -> CompiledStateGraph:
+def build_react_graph(tools : list[Callable], llm : ChatOpenAI) -> CompiledStateGraph:
     """Builds and returns a simple ReAct graph.
 
     Args:

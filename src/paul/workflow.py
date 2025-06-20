@@ -3,55 +3,63 @@ from langchain_community.tools import ReadFileTool, WriteFileTool, ListDirectory
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.errors import GraphRecursionError
-
-from .graph_builder import build_graph
-from .pytest_tool import pytest_tool
-from .utils import setup_git_environment, parse_paul_response, create_pull_request
-from github import Github
 from subprocess import run
+from typing import Tuple, Dict
+
+from .pytest_tool import pytest_tool
+from .react_graph import build_react_graph
+from .utils import parse_paul_response
 
 import uuid
 
+def run_paul_workflow(model: str, repo_path: str, issue_title: str, issue_body: str, issue_number: int, OPENAI_API_KEY: str) -> Tuple[Dict[str, str], str]:
+    """
+    Executes the PAUL workflow to generate a patch for a given issue using an LLM agent.
 
-def run_github(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str, OPENAI_API_KEY: str, model_name: str) -> None:
+    Args:
+        model (str): The OpenAI model name to use.
+        repo_path (str): Path to the local repository.
+        issue_title (str): Title of the issue to resolve.
+        issue_body (str): Body/description of the issue to resolve.
+        issue_number (int): Issue number (for response parsing).
+        OPENAI_API_KEY (str): The OpenAI API key.
+
+    Returns:
+        Dict[str, str]: Dict with the PAUL's JSON response containing: 'commit_msg', 'pr_title', 'pr_body'.
+        str: The name of the newly created git branch.
+
+    Raises:
+        RuntimeError: If the workflow fails due to recursion limit.
+    """
+    
     print("Waking PAUL up...\n")
-    setup_git_environment()
-    gh = Github(GITHUB_TOKEN)
-
-    print(f"Getting issue #{issue_number}...")
-    repo = gh.get_repo(f"{owner}/{repo_name}")
-    issue = repo.get_issue(number=issue_number)
-    label_names = [label.name for label in issue.labels]
-    if 'PAUL' not in label_names:
-        print("No 'PAUL' label found. Exiting...")
-        return
 
     branch_name = f"PAUL-branch-{uuid.uuid4().hex[:8]}"
     run(["git", "checkout", "-b", branch_name], check=True)
 
     print("Initializing ReAct graph...\n")
     token_logger = OpenAICallbackHandler()
-    llm = ChatOpenAI(model=model_name, openai_api_key=OPENAI_API_KEY, callbacks=[token_logger])
+    llm = ChatOpenAI(model=model, openai_api_key=OPENAI_API_KEY, callbacks=[token_logger])
     tools = [ReadFileTool(), WriteFileTool(), ListDirectoryTool(), pytest_tool]
-    APP = build_graph(tools=tools, llm=llm)
+    APP = build_react_graph(tools=tools, llm=llm)
 
     print("Initializing chat history...\n")
     chat_history = []
-    system_message = SystemMessage(content="""
+    system_message = SystemMessage(content=f"""
     You are PAUL, an AI-powered GitHub developer assistant.
-    Your job is to automatically resolve issues in a local repository that has already been cloned to /github/workspace.
+    Your job is to automatically resolve issues in a local repository that has already been cloned to {repo_path}.
 
     Given the following:
-    - The full GitHub issue (including number, title, and body)
+    - The full GitHub issue (including title and body)
     - Complete read/write access to the repository files and standard developer tools
 
     Follow this workflow:
-    1. **Understand the Issue:** Carefully read the issue title, body, and number to determine what needs to be fixed or implemented.
+    1. **Understand the Issue:** Carefully read the issue title and body to determine what needs to be fixed or implemented.
     2. **Locate Relevant Code:** Identify which file(s) in the codebase are related to the issue and require modification.
     3. **Apply the Patch:** Make only the changes necessary to address the issue. Ensure your code is clear, correct, and matches the project’s coding style.
-    4. **Test:** If possible, verify that your fix works (e.g., run tests, add a minimal test if relevant, or explain what you did to verify).
+    4. **Test:** If possible, verify that your fix works (e.g., run tests or explain what you did to verify).
     5. **Prepare the Commit:** Write a concise, informative commit message describing the change. The message should be suitable for inclusion in the main branch’s history.
-    6. **Draft a Pull Request:** Write a clear pull request title and body. The title should summarize the fix; the body should explain what was changed and why. Do **not** include the issue number in the body.
+    6. **Draft a Pull Request:** Write a clear pull request title and body. The title should summarize the fix; the body should explain what was changed and why.
 
     **Constraints:**
     - Make the minimal necessary change to resolve the issue—avoid unrelated edits.
@@ -60,7 +68,6 @@ def run_github(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str,
     - Output must be in the required JSON format, with all fields present.
 
     **Your response must be a JSON object with these fields:**
-    - `modified_files`: List of modified file paths (relative to the repo root).
     - `commit_msg`: A clear, concise commit message.
     - `pr_title`: The pull request title.
     - `pr_body`: The pull request body (do not mention the issue number in the body).
@@ -68,7 +75,6 @@ def run_github(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str,
     Example response:
     ```json
     {
-    "modified_files": ["src/app.py"],
     "commit_msg": "Fix division by zero error in app.py",
     "pr_title": "Fix division by zero in app calculation",
     "pr_body": "This PR fixes a bug in app.py that could cause a division by zero when processing empty input. A conditional check was added to prevent the error."
@@ -79,20 +85,16 @@ def run_github(owner: str, repo_name: str, issue_number: int, GITHUB_TOKEN: str,
     """)
     chat_history.append(system_message)
     query = HumanMessage(content=f"""
-        Issue Title: {issue.title}
-        Issue Body: {issue.body}
-        Issue Number: {issue_number}
+        Issue Title: {issue_title}
+        Issue Body: {issue_body}
     """)
     chat_history.append(query)
 
-    print("Invoking LLM...\n")
+    print("Invoking PAUL...\n")
     try:
         output_state = APP.invoke({"messages" : chat_history})
     except GraphRecursionError as e:
         raise RuntimeError("Failed to provide a solution due to recursion limit. Exiting...") from e
     
-    print("Creating pull request...\n")
-    content_json = parse_paul_response(output_state["messages"], issue_number, token_logger)
-    pr = create_pull_request(content_json, branch_name, repo)
-    
-    print(f"Pull request successfully created: {pr.html_url}")
+    print("PAUL has finished working!\n")
+    return parse_paul_response(output_state["messages"], issue_number, token_logger), branch_name

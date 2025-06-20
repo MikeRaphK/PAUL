@@ -1,14 +1,75 @@
 from dotenv import load_dotenv
-from github.Repository import Repository
-from github.PullRequest import PullRequest
 from langchain_community.callbacks.openai_info import OpenAICallbackHandler
 from langchain_core.messages import BaseMessage
-from subprocess import run
 from typing import Tuple, Dict, List
 
+import argparse
 import json
 import os
 import re
+
+
+
+def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
+    """
+    Parses command-line arguments for PAUL's modes of operation.
+
+    Returns:
+        Tuple[argparse.ArgumentParser, argparse.Namespace]: A tuple containing:
+            - The configured ArgumentParser instance.
+            - The parsed arguments namespace.
+        
+        The contents of the parsed arguments depend on the selected mode:
+            - For 'github': contains 'owner', 'repo', 'issue', 'model'
+            - For 'local': contains 'repo', 'issue', 'model'
+            - For 'swebench': contains 'split', 'id', 'model'
+    """
+
+    # Main parser
+    parser = argparse.ArgumentParser(
+        description="PAUL - Patch Automation Using LLMs: LLM agent that automatically detects and patches GitHub issues.",
+        epilog="Example: python3 %(prog)s github --owner MikeRaphK --repo PAUL --issue 13 --model gpt-4o"
+    )
+    subparsers = parser.add_subparsers(dest="mode", required=True, title="modes", metavar="<mode>", description="Choose one of PAUL's available modes of operation")
+
+    # GitHub Actions mode
+    parser_github = subparsers.add_parser(
+        'github',
+        help='Run in GitHub Actions mode',
+        usage="python3 %(prog)s --owner <repo owner username> --repo <repo name> --issue <issue number> --model <openai model>",
+        description="Run PAUL in GitHub Actions mode.",
+        epilog="Example: python3 %(prog)s --owner MikeRaphK --repo PAUL --issue 13 --model gpt-4o"
+    )
+    parser_github.add_argument('--owner', required=True, help='GitHub repository owner username', metavar='<username>')
+    parser_github.add_argument('--repo', required=True, help='Repository name', metavar='<repo name>')
+    parser_github.add_argument('--issue', required=True, type=int, help='Issue number (int)', metavar='<number>')
+    parser_github.add_argument('--model', default="gpt-4o-mini", help='OpenAI model to use (optional, default: gpt-4o-mini)', metavar='<model>')
+
+    # Local mode
+    parser_local = subparsers.add_parser(
+        'local',
+        help='Run locally on a cloned repository',
+        usage="python3 %(prog)s --path <repo path> --issue <issue desc> --model <openai model>",
+        description="Run PAUL locally on a cloned repository.",
+        epilog="Example: python3 %(prog)s --path ./repos/my_repo_1 --issue ./issues/my_issue_13.txt --model gpt-4o"
+    )
+    parser_local.add_argument('--path', required=True, help='Path to locally cloned repository', metavar='<repo path>')
+    parser_local.add_argument('--issue', required=True, help='File containing issue description', metavar='<issue desc>')
+    parser_local.add_argument('--model', default="gpt-4o-mini", help='OpenAI model to use (optional, default: gpt-4o-mini)', metavar='<model>')
+
+    # SWE-bench Lite mode
+    parser_swebench_lite = subparsers.add_parser(
+        'swebench',
+        help='Run on SWE-bench Lite',
+        usage="python3 %(prog)s --split <split> --id <instance id> --model <openai model>",
+        description="Run PAUL on SWE-bench Lite benchmark.",
+        epilog="Example: python3 %(prog)s --split test --id sympy__sympy-20590 --model gpt-4o"
+    )
+    parser_swebench_lite.add_argument('--split', required=True, help='The split of SWE-bench Lite', metavar='<split>')
+    parser_swebench_lite.add_argument('--id', required=True, help='The instance id of a benchmark instance', metavar='<instance id>')
+    parser_swebench_lite.add_argument('--model', default="gpt-4o-mini", help='OpenAI model to use (optional, default: gpt-4o-mini)', metavar='<model>')
+
+    return parser, parser.parse_args()
 
 
 
@@ -36,23 +97,6 @@ def check_env_vars() -> Tuple[str, str]:
 
 
 
-def setup_git_environment() -> None:
-    """
-    Set up the local Git environment for safe repository operations in a Docker-based GitHub Action.
-
-    Raises:
-        subprocess.CalledProcessError: If any git command fails.
-        AssertionError: If the .git directory does not exist in /github/workspace.
-    """
-    os.chdir("/github/workspace")
-    os.environ["GIT_DIR"] = os.path.abspath(".git")
-    os.environ["GIT_WORK_TREE"] = os.getcwd()
-    run(["git", "config", "user.email", "paul-bot@users.noreply.github.com"], check=True)
-    run(["git", "config", "user.name", "paul-bot"], check=True)
-    run(["git", "config", "--global", "--add", "safe.directory", os.getcwd()])
-
-
-
 def parse_paul_response(chat_history: List[BaseMessage], issue_number: int, token_logger: OpenAICallbackHandler) -> Dict[str, str]:
     """
     Parse JSON response from PAUL.
@@ -70,13 +114,13 @@ def parse_paul_response(chat_history: List[BaseMessage], issue_number: int, toke
     if last_message_content.startswith("```"):
         last_message_content = re.sub(r"^```(?:json)?\s*", "", last_message_content)
         last_message_content = re.sub(r"\s*```$", "", last_message_content)
-    content_json = json.loads(last_message_content)
+    paul_response = json.loads(last_message_content)
 
     # Add starting note
-    content_json["pr_body"] =  "> **Note:** This message was automatically generated by PAUL. Please review the proposed changes carefully before merging.\n\n" + content_json["pr_body"] + "\n\n"
+    paul_response["pr_body"] =  "> **Note:** This message was automatically generated by PAUL. Please review the proposed changes carefully before merging.\n\n" + paul_response["pr_body"] + "\n\n"
 
     # Add tool usage info
-    content_json["pr_body"] += f"Tools Used:\n"
+    paul_response["pr_body"] += f"Tools Used:\n"
     tool_str = ""
     for message in chat_history:
         tool_calls = getattr(message, "additional_kwargs", {}).get("tool_calls", [])
@@ -85,45 +129,16 @@ def parse_paul_response(chat_history: List[BaseMessage], issue_number: int, toke
             tool_arguments = tool_call["function"]["arguments"]
             tool_str += f"- `{tool_name}` with arguments `{tool_arguments}`\n"
     if tool_str:
-        content_json["pr_body"] += f"{tool_str}\n"
+        paul_response["pr_body"] += f"{tool_str}\n"
     else:
-        content_json["pr_body"] += "None\n\n"
+        paul_response["pr_body"] += "None\n\n"
 
     # Add token usage info
-    content_json["pr_body"] += f"Tokens Used: {token_logger.total_tokens}\n"
-    content_json["pr_body"] += f"Successful Requests: {token_logger.successful_requests}\n"
-    content_json["pr_body"] += f"Total Cost (USD): {token_logger.total_cost:.6f}\n\n"
+    paul_response["pr_body"] += f"Tokens Used: {token_logger.total_tokens}\n"
+    paul_response["pr_body"] += f"Successful Requests: {token_logger.successful_requests}\n"
+    paul_response["pr_body"] += f"Total Cost (USD): {token_logger.total_cost:.6f}\n\n"
 
     # Add ending note
-    content_json["pr_body"] += f"Related to #{issue_number}\n"
+    paul_response["pr_body"] += f"Related to #{issue_number}\n"
 
-    return content_json
-
-
-def create_pull_request(content_json: Dict[str, str], branch_name: str, repo: Repository) -> PullRequest:
-    """
-    Commit local changes and create a pull request on GitHub.
-
-    Args:
-        content_json (Dict[str, str]): Dictionary containing the commit message, PR title, and PR body.
-        branch_name (str): Name of the branch to push and use as the PR head.
-        repo (Repository): PyGithub Repository object for the target repo.
-
-    Returns:
-        PullRequest: The created GitHub PullRequest object.
-    """
-
-    # Commit and push
-    run(["git", "add", "."], check=True)
-    run(["git", "commit", "-m", content_json["commit_msg"]], check=True)
-    run(["git", "push", "--set-upstream", "origin", branch_name], check=True)
-
-    # Create pull request
-    pr = repo.create_pull(
-        title=content_json["pr_title"],
-        body=content_json["pr_body"],
-        head=branch_name,
-        base=repo.default_branch,
-        draft=False
-    )
-    return pr
+    return paul_response
