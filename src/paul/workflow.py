@@ -73,12 +73,9 @@ def run_paul_workflow(model: str, repo_path: str, issue_title: str, issue_body: 
     - `pr_body`: The pull request body (do not mention the issue number in the body).
 
     Example response:
-    ```json
-    {
     "commit_msg": "Fix division by zero error in app.py",
     "pr_title": "Fix division by zero in app calculation",
     "pr_body": "This PR fixes a bug in app.py that could cause a division by zero when processing empty input. A conditional check was added to prevent the error."
-    }
     ```
                                    
     Do not include any explanation or extra commentary outside the JSON. Only output the JSON object.
