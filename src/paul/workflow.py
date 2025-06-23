@@ -37,7 +37,7 @@ def run_paul_workflow(model: str, repo_path: str, issue_title: str, issue_body: 
     branch_name = f"PAUL-branch-{uuid.uuid4().hex[:8]}"
     run(["git", "checkout", "-b", branch_name], check=True)
 
-    print(f"Initializing ReAct graph using {model}...\n")
+    print(f"\nInitializing ReAct graph using {model}...\n")
     token_logger = OpenAICallbackHandler()
     llm = ChatOpenAI(model=model, openai_api_key=OPENAI_API_KEY, callbacks=[token_logger])
     tools = [ReadFileTool(), WriteFileTool(), ListDirectoryTool(), pytest_tool]
