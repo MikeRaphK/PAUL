@@ -1,5 +1,72 @@
-def run_local(path: str, issue: str, model: str, GITHUB_TOKEN: str, OPENAI_API_KEY: str) -> None:
-    print("Running PAUL in local mode...")
-    print(f"Repository path: {path}")
-    print(f"Issue description file: {issue}")
-    print(f"OpenAI model: {model}")
+from ..workflow import run_paul_workflow
+from typing import Tuple
+import os
+
+
+
+def parse_issue_file(issue_path: str) -> Tuple[str, int, str]:
+    """
+    Checks if the given file exists and parses its contents.
+    The first line becomes the issue_title, the second line the issue_number (int) and the rest the issue_body.
+
+    Args:
+        issue_path (str): Path to the issue description file.
+
+    Returns:
+        Tuple[str, int, str]: (issue_title, issue_number, issue_body)
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        ValueError: If the file has invalid formatting.
+    """
+    # Check if the issue file exists
+    if not os.path.isfile(issue_path):
+        raise FileNotFoundError(f"Issue file not found: {issue_path}")
+
+    # Read it
+    with open(issue_path, encoding="utf-8") as f:
+        lines = f.readlines()
+    if len(lines) < 3:
+        raise ValueError(f"Issue file must have at least 3 lines (title, number, body)")
+
+    # Parse it
+    issue_title = lines[0].strip()
+    issue_number = int(lines[1].strip())
+    issue_body = "".join(lines[2:]).strip()
+    return issue_title, issue_number, issue_body
+
+
+
+def write_paul_response(output_path: str, paul_response: dict) -> None:
+    """
+    Saves PAUL's JSON output to a file in a human-readable format.
+
+    Args:
+        json_data (dict): The JSON object from PAUL.
+        filepath (str): Where to write the output.
+    """
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write("----- Commit message -----\n")
+        f.write(paul_response["commit_msg"] + "\n\n")
+        f.write("----- PR title -----\n")
+        f.write(paul_response["pr_title"] + "\n\n")
+        f.write("----- PR body -----\n")
+        f.write(paul_response["pr_body"])
+
+
+
+def run_local(repo_path: str, issue_path: str, output_path: str, model: str, OPENAI_API_KEY: str) -> None:
+    print(f"Reading issue file from '{issue_path}'...\n")
+    issue_title, issue_number, issue_body = parse_issue_file(issue_path)
+
+    print("Setting up local environment...\n")
+    previous_cwd = os.getcwd()
+    os.chdir(repo_path)
+
+    paul_response, _ = run_paul_workflow(model, repo_path, issue_title, issue_body, issue_number, OPENAI_API_KEY)
+
+    print(f"Writing response to '{output_path}'...\n")
+    os.chdir(previous_cwd)
+    write_paul_response(output_path, paul_response)
+    
+    print(f"PAUL response successfully written! Check '{output_path}' for details.\n")
