@@ -49,12 +49,13 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     parser_local = subparsers.add_parser(
         'local',
         help='Run locally on a cloned repository',
-        usage="python3 %(prog)s --path <repo path> --issue <issue desc> --model <openai model>",
+        usage="python3 %(prog)s --path <repo path> --issue <issue desc> --output <output file path> --model <openai model>",
         description="Run PAUL locally on a cloned repository.",
-        epilog="Example: python3 %(prog)s --path ./repos/my_repo_1 --issue ./issues/my_issue_13.txt --model gpt-4o"
+        epilog="Example: python3 %(prog)s --path ./repos/my_repo_1 --issue ./issues/my_issue_13.txt --output ./patch.txt --model gpt-4o"
     )
     parser_local.add_argument('--path', required=True, help='Path to locally cloned repository', metavar='<repo path>')
     parser_local.add_argument('--issue', required=True, help='File containing issue description', metavar='<issue desc>')
+    parser_local.add_argument('--output', required=True, help='Output file path containing patch and PR info', metavar='<out file>')
     parser_local.add_argument('--model', default="gpt-4o-mini", help='OpenAI model to use (optional, default: gpt-4o-mini)', metavar='<model>')
 
     # SWE-bench Lite mode
@@ -73,7 +74,7 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
 
 
 
-def check_env_vars() -> Tuple[str, str]:
+def check_env_vars(mode: str) -> Tuple[str, str]:
     """
     Loads and validates required environment variables.
 
@@ -86,7 +87,7 @@ def check_env_vars() -> Tuple[str, str]:
     load_dotenv(override=False)
 
     GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-    if not GITHUB_TOKEN:
+    if mode == 'github' and not GITHUB_TOKEN:
         raise ValueError("GITHUB_TOKEN is not set.")
 
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
