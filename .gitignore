@@ -1,5 +1,4 @@
-.vscode
-__pycache__/
 .env
-cloned_repo/
-notes.txt
+.vscode/
+__pycache__/
+local/
