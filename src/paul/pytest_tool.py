@@ -2,7 +2,7 @@ from langchain_core.tools import tool
 from subprocess import run
 
 @tool
-def pytest_tool(target: str = "", test_function: str = "") -> str:
+def pytest_tool(target: str = "", test_function: str = "") -> dict:
     """
     Runs pytest in the current environment.
     - If called with no arguments, runs all tests (pytest).
@@ -13,7 +13,11 @@ def pytest_tool(target: str = "", test_function: str = "") -> str:
         target: The file or directory to test (optional).
         test_function: The test function to run inside the target file (optional, file only).
     Returns:
-        The output of the pytest command.
+        A dict with:
+            - command: The pytest command run
+            - stdout: Standard output of the command
+            - stderr: Standard error output
+            - returncode: Exit code from pytest
     """
     # Build command
     command = ["pytest"]
@@ -22,9 +26,21 @@ def pytest_tool(target: str = "", test_function: str = "") -> str:
             command.append(f"{target}::{test_function}")
         else:
             command.append(target)
+    command.append("-vvvv")
+
     # Try to run pytest
     try:
         result = run(command, capture_output=True, text=True, check=False)
-        return f"Command: {' '.join(command)}\n\nOutput:\n{result.stdout}\nReturn code: {result.returncode}"
+        return {
+            "command": " ".join(command),
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "returncode": result.returncode,
+        }
     except Exception as e:
-        return f"Error running pytest: {e}"
+        return {
+            "command": " ".join(command),
+            "stdout": "",
+            "stderr": str(e),
+            "returncode": -1,
+        }
