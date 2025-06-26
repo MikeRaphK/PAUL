@@ -1,12 +1,13 @@
 from github import Github
 from github.Repository import Repository
-from github.PullRequest import PullRequest
 from subprocess import run
 from typing import Dict
 
 import os
 
 from ..workflow import run_paul_workflow
+
+
 
 def setup_git_environment() -> None:
     """
@@ -16,7 +17,6 @@ def setup_git_environment() -> None:
         subprocess.CalledProcessError: If any git command fails.
         AssertionError: If the .git directory does not exist in /github/workspace.
     """
-    os.chdir("/github/workspace")
     os.environ["GIT_DIR"] = os.path.abspath(".git")
     os.environ["GIT_WORK_TREE"] = os.getcwd()
     run(["git", "config", "user.email", "paul-bot@users.noreply.github.com"], check=True)
@@ -25,7 +25,7 @@ def setup_git_environment() -> None:
 
 
 
-def create_pull_request(paul_response: Dict[str, str], branch_name: str, repo: Repository) -> PullRequest:
+def create_pull_request(paul_response: Dict[str, str], branch_name: str, repo: Repository) -> str:
     """
     Commit local changes and create a pull request on GitHub.
 
@@ -35,7 +35,7 @@ def create_pull_request(paul_response: Dict[str, str], branch_name: str, repo: R
         repo (Repository): PyGithub Repository object for the target repo.
 
     Returns:
-        PullRequest: The created GitHub PullRequest object.
+        str: The created GitHub pull request URL.
     """
 
     # Commit and push
@@ -51,7 +51,9 @@ def create_pull_request(paul_response: Dict[str, str], branch_name: str, repo: R
         base=repo.default_branch,
         draft=False
     )
-    return pr
+    return pr.html_url
+
+
 
 def run_github(owner: str, repo_name: str, issue_number: int, model: str, GITHUB_TOKEN: str, OPENAI_API_KEY: str) -> None:
     print("Setting up GitHub environment...\n")
@@ -69,6 +71,6 @@ def run_github(owner: str, repo_name: str, issue_number: int, model: str, GITHUB
     paul_response, branch_name = run_paul_workflow(model, "/github/workspace", issue.title, issue.body, issue_number, OPENAI_API_KEY)
 
     print("Creating pull request...\n")
-    pr = create_pull_request(paul_response, branch_name, repo)
+    url = create_pull_request(paul_response, branch_name, repo)
     
-    print(f"Pull request successfully created: {pr.html_url}")
+    print(f"Pull request successfully created: {url}")

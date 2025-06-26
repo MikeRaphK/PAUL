@@ -8,6 +8,8 @@ from langgraph.prebuilt import ToolNode
 from typing import Annotated, Callable, Literal
 from typing_extensions import TypedDict
 
+
+
 # TypedDict is used to create a dictionary with explicitly defined key-value types.
 # Each state will essentially be repressented as a pre-defined dictionary
 class State(TypedDict):
@@ -22,12 +24,14 @@ class State(TypedDict):
     messages : Annotated[list, add_messages]
 
 
-def build_react_graph(tools : list[Callable], llm : ChatOpenAI) -> CompiledStateGraph:
+
+def build_react_graph(tools : list[Callable], llm : ChatOpenAI, png_path: str) -> CompiledStateGraph:
     """Builds and returns a simple ReAct graph.
 
     Args:
         tools (list[Callable]): A list of tools that the LLM will have access to.
         llm (ChatOpenAI): The LLM that will be used.
+        png_path (str): The file path where the generated graph PNG image will be saved.
     
     Returns:
         CompiledStateGraph: The compiled ReAct graph with the LLM and the tools.
@@ -37,6 +41,7 @@ def build_react_graph(tools : list[Callable], llm : ChatOpenAI) -> CompiledState
 
     # Graph will store State class objects in each node
     graph = StateGraph(State)
+
 
     # Prompt Node
     def prompt_node(state : State) -> State:
@@ -55,10 +60,12 @@ def build_react_graph(tools : list[Callable], llm : ChatOpenAI) -> CompiledState
     graph.add_node("prompt_node", prompt_node)
     graph.set_entry_point("prompt_node")
 
+
     # Tool Node
     tool_node = ToolNode(tools)
     graph.add_node("tool_node", tool_node)
     graph.add_edge("tool_node", "prompt_node")
+
 
     # Conditional Edge
     def conditional_edge(state : State) -> Literal['tool_node', '__end__']:
@@ -82,5 +89,13 @@ def build_react_graph(tools : list[Callable], llm : ChatOpenAI) -> CompiledState
         'prompt_node',
         conditional_edge
     )
-    APP = graph.compile()
+
+
+    # Compile graph and write png
+    APP = graph.compile()    
+    img = APP.get_graph().draw_mermaid_png()
+    with open(png_path, "wb") as f:
+        f.write(img)
+        print(f"Graph written to '{png_path}'\n")
+
     return APP

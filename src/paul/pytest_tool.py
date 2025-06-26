@@ -31,16 +31,6 @@ def pytest_tool(target: str = "", test_function: str = "") -> dict:
     # Try to run pytest
     try:
         result = run(command, capture_output=True, text=True, check=False)
-        return {
-            "command": " ".join(command),
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-            "returncode": result.returncode,
-        }
+        return f"Command: {' '.join(command)}\n\nOutput:\n{result.stdout}\nReturn code: {result.returncode}"
     except Exception as e:
-        return {
-            "command": " ".join(command),
-            "stdout": "",
-            "stderr": str(e),
-            "returncode": -1,
-        }
+        return f"Error running pytest: {e}"

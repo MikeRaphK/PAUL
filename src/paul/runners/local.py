@@ -37,14 +37,13 @@ def parse_issue_file(issue_path: str) -> Tuple[str, int, str]:
 
 
 
-def write_paul_response(output_path: str, paul_response: dict) -> None:
-    """
-    Saves PAUL's JSON output to a file in a human-readable format.
+def run_local(repo_path: str, issue_path: str, output_path: str, model: str, OPENAI_API_KEY: str) -> None:
+    print(f"Reading issue file from '{issue_path}'...\n")
+    issue_title, issue_number, issue_body = parse_issue_file(issue_path)
 
-    Args:
-        json_data (dict): The JSON object from PAUL.
-        filepath (str): Where to write the output.
-    """
+    paul_response, _ = run_paul_workflow(model, repo_path, issue_title, issue_body, issue_number, OPENAI_API_KEY)
+
+    print(f"Writing response to '{output_path}'...\n")
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("----- Commit message -----\n")
         f.write(paul_response["commit_msg"] + "\n\n")
@@ -52,21 +51,5 @@ def write_paul_response(output_path: str, paul_response: dict) -> None:
         f.write(paul_response["pr_title"] + "\n\n")
         f.write("----- PR body -----\n")
         f.write(paul_response["pr_body"])
-
-
-
-def run_local(repo_path: str, issue_path: str, output_path: str, model: str, OPENAI_API_KEY: str) -> None:
-    print(f"Reading issue file from '{issue_path}'...\n")
-    issue_title, issue_number, issue_body = parse_issue_file(issue_path)
-
-    print("Setting up local environment...\n")
-    previous_cwd = os.getcwd()
-    os.chdir(repo_path)
-
-    paul_response, _ = run_paul_workflow(model, repo_path, issue_title, issue_body, issue_number, OPENAI_API_KEY)
-
-    print(f"Writing response to '{output_path}'...\n")
-    os.chdir(previous_cwd)
-    write_paul_response(output_path, paul_response)
     
     print(f"PAUL response successfully written! Check '{output_path}' for details.\n")
