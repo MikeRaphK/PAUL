@@ -1,15 +1,11 @@
 from functools import partial
-
 from langchain_openai import ChatOpenAI
-
 from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode
-
 from typing import Annotated, Callable, Literal
 from typing_extensions import TypedDict
-
 
 
 # TypedDict is used to create a dictionary with explicitly defined key-value types.
@@ -21,36 +17,34 @@ class State(TypedDict):
     #   print(x)
     # Python ignores "Must be a positive integer" at runtime, but libraries (like pydantic, langgraph, etc.) can read this metadata.
 
-    # The add_messages reducer function is used to append new messages to the list instead of overwriting it. 
-    # By default, keys without a reducer annotation will overwrite previous values. 
-    messages : Annotated[list, add_messages]
+    # The add_messages reducer function is used to append new messages to the list instead of overwriting it.
+    # By default, keys without a reducer annotation will overwrite previous values.
+    messages: Annotated[list, add_messages]
 
 
-
-def invoke_llm(state : State, llm_with_tools: Callable) -> State:
+def invoke_llm(state: State, llm_with_tools: Callable) -> State:
     """
     Invokes the model.
 
     Args:
         state (State): The current state.
-    
+
     Returns:
         State: A new state that occurs after invoking the model. The message of the new state will be appended to the message history
     """
 
     chat_history = state["messages"]
     new_message = llm_with_tools.invoke(chat_history)
-    return {"messages" : [new_message]}
+    return {"messages": [new_message]}
 
 
-
-def need_tool(state : State) -> Literal['Need tool', 'Done']:
+def need_tool(state: State) -> Literal["Need tool", "Done"]:
     """
     Determines whether the agent needs a tool or not.
 
     Args:
         state (State): The current state.
-    
+
     Returns:
         Literal['Need tool', 'Done']: The next node to transition to.
     """
@@ -64,7 +58,9 @@ def need_tool(state : State) -> Literal['Need tool', 'Done']:
         return "Done"
 
 
-def build_react_graph(tools : list[Callable], llm : ChatOpenAI, png_path: str) -> CompiledStateGraph:
+def build_react_graph(
+    tools: list[Callable], llm: ChatOpenAI, png_path: str
+) -> CompiledStateGraph:
     """
     Builds and returns a simple ReAct graph.
 
@@ -72,7 +68,7 @@ def build_react_graph(tools : list[Callable], llm : ChatOpenAI, png_path: str) -
         tools (list[Callable]): A list of tools that the LLM will have access to.
         llm (ChatOpenAI): The LLM that will be used.
         png_path (str): The file path where the generated graph PNG image will be saved.
-    
+
     Returns:
         CompiledStateGraph: The compiled ReAct graph with the LLM and the tools.
     """
@@ -92,13 +88,11 @@ def build_react_graph(tools : list[Callable], llm : ChatOpenAI, png_path: str) -
 
     # ReAct agent conditional Edge
     graph.add_conditional_edges(
-        'ReAct agent',
-        need_tool,
-        {"Need tool": "Toolkit", "Done": END}
+        "ReAct agent", need_tool, {"Need tool": "Toolkit", "Done": END}
     )
 
     # Compile graph and write png
-    APP = graph.compile()    
+    APP = graph.compile()
     img = APP.get_graph().draw_mermaid_png()
     with open(png_path, "wb") as f:
         f.write(img)
