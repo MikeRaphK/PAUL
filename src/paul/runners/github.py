@@ -17,11 +17,14 @@ def setup_git_environment() -> None:
         subprocess.CalledProcessError: If any git command fails.
         AssertionError: If the .git directory does not exist in /github/workspace.
     """
+    os.chdir("/github/workspace")
     os.environ["GIT_DIR"] = os.path.abspath(".git")
     os.environ["GIT_WORK_TREE"] = os.getcwd()
     run(["git", "config", "user.email", "paul-bot@users.noreply.github.com"], check=True)
     run(["git", "config", "user.name", "paul-bot"], check=True)
     run(["git", "config", "--global", "--add", "safe.directory", os.getcwd()])
+    os.chdir("/app")
+
 
 
 
@@ -60,7 +63,7 @@ def run_github(owner: str, repo_name: str, issue_number: int, model: str, GITHUB
     setup_git_environment()
     gh = Github(GITHUB_TOKEN)
 
-    print(f"Getting issue #{issue_number}...")
+    print(f"Getting issue #{issue_number}...\n")
     repo = gh.get_repo(f"{owner}/{repo_name}")
     issue = repo.get_issue(number=issue_number)
     label_names = [label.name for label in issue.labels]
