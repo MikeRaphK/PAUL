@@ -1,6 +1,8 @@
+from functools import partial
+
 from langchain_openai import ChatOpenAI
 
-from langgraph.graph import StateGraph
+from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode
@@ -25,8 +27,46 @@ class State(TypedDict):
 
 
 
+def invoke_llm(state : State, llm_with_tools: Callable) -> State:
+    """
+    Invokes the model.
+
+    Args:
+        state (State): The current state.
+    
+    Returns:
+        State: A new state that occurs after invoking the model. The message of the new state will be appended to the message history
+    """
+
+    chat_history = state["messages"]
+    new_message = llm_with_tools.invoke(chat_history)
+    return {"messages" : [new_message]}
+
+
+
+def need_tool(state : State) -> Literal['Need tool', 'Done']:
+    """
+    Determines whether the agent needs a tool or not.
+
+    Args:
+        state (State): The current state.
+    
+    Returns:
+        Literal['Need tool', 'Done']: The next node to transition to.
+    """
+    # If the last message contained a tool call we need to route to the tool node
+    chat_history = state["messages"]
+    last_message = chat_history[-1]
+    if last_message.tool_calls:
+        return "Need tool"
+    # Otherwise, the workflow ends
+    else:
+        return "Done"
+
+
 def build_react_graph(tools : list[Callable], llm : ChatOpenAI, png_path: str) -> CompiledStateGraph:
-    """Builds and returns a simple ReAct graph.
+    """
+    Builds and returns a simple ReAct graph.
 
     Args:
         tools (list[Callable]): A list of tools that the LLM will have access to.
@@ -42,54 +82,20 @@ def build_react_graph(tools : list[Callable], llm : ChatOpenAI, png_path: str) -
     # Graph will store State class objects in each node
     graph = StateGraph(State)
 
+    # Entry point
+    graph.add_node("ReAct agent", partial(invoke_llm, llm_with_tools=llm_with_tools))
+    graph.set_entry_point("ReAct agent")
 
-    # Prompt Node
-    def prompt_node(state : State) -> State:
-        """Invokes the model.
+    # Toolkit
+    graph.add_node("Toolkit", ToolNode(tools))
+    graph.add_edge("Toolkit", "ReAct agent")
 
-        Args:
-            state (State): The current state.
-        
-        Returns:
-            State: A new state that occurs after invoking the model. The message of the new state will be appended to the message history
-        """
-
-        chat_history = state["messages"]
-        new_message = llm_with_tools.invoke(chat_history)
-        return {"messages" : [new_message]}
-    graph.add_node("prompt_node", prompt_node)
-    graph.set_entry_point("prompt_node")
-
-
-    # Tool Node
-    tool_node = ToolNode(tools)
-    graph.add_node("tool_node", tool_node)
-    graph.add_edge("tool_node", "prompt_node")
-
-
-    # Conditional Edge
-    def conditional_edge(state : State) -> Literal['tool_node', '__end__']:
-        """Determines the next step in the graph.
-
-        Args:
-            state (State): The current state.
-        
-        Returns:
-            Literal['tool_node', '__end__']: The next node to transition to.
-        """
-        # If the last message contained a tool call we need to route to the tool node
-        chat_history = state["messages"]
-        last_message = chat_history[-1]
-        if last_message.tool_calls:
-            return "tool_node"
-        # Otherwise, the workflow ends
-        else:
-            return "__end__"
+    # ReAct agent conditional Edge
     graph.add_conditional_edges(
-        'prompt_node',
-        conditional_edge
+        'ReAct agent',
+        need_tool,
+        {"Need tool": "Toolkit", "Done": END}
     )
-
 
     # Compile graph and write png
     APP = graph.compile()    
