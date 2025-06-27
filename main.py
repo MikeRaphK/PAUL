@@ -4,6 +4,7 @@ from src.paul.runners.swebench_lite import run_swebench_lite
 from src.paul.utils import parse_args, check_env_vars
 
 if __name__ == "__main__":
+    exit()
     # Parse arguements and check environment variables
     parser, args = parse_args()
     GITHUB_TOKEN, OPENAI_API_KEY = check_env_vars(args.mode)
