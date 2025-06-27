@@ -1,4 +1,5 @@
 from ..workflow import run_paul_workflow
+from ..utils import write_paul_response
 from typing import Tuple
 import os
 
@@ -42,14 +43,4 @@ def run_local(repo_path: str, issue_path: str, output_path: str, model: str, OPE
     issue_title, issue_number, issue_body = parse_issue_file(issue_path)
 
     paul_response, _ = run_paul_workflow(model, repo_path, issue_title, issue_body, issue_number, OPENAI_API_KEY)
-
-    print(f"Writing response to '{output_path}'...\n")
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write("----- Commit message -----\n")
-        f.write(paul_response["commit_msg"] + "\n\n")
-        f.write("----- PR title -----\n")
-        f.write(paul_response["pr_title"] + "\n\n")
-        f.write("----- PR body -----\n")
-        f.write(paul_response["pr_body"])
-    
-    print(f"PAUL response successfully written! Check '{output_path}' for details.\n")
+    write_paul_response(output_path, paul_response)

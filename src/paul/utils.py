@@ -61,12 +61,15 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     parser_swebench_lite = subparsers.add_parser(
         'swebench',
         help='Run on SWE-bench Lite',
-        usage="python3 %(prog)s --split <split> --id <instance id> --model <openai model>",
+        usage="python3 %(prog)s --path <repo path> --split <split> --id <instance id> --test <test> --output <output file path> --model <openai model>",
         description="Run PAUL on SWE-bench Lite benchmark.",
-        epilog="Example: python3 %(prog)s --split test --id sympy__sympy-20590 --model gpt-4o"
+        epilog="Example: python3 %(prog)s --path ./local/sympy --split test --id sympy__sympy-20590 --test sympy/core/tests/test_basic.py::test_immutable --output ./patch.txt --model gpt-4o"
     )
+    parser_swebench_lite.add_argument('--path', required=True, help='Path to locally cloned SWE-bench Lite repository', metavar='<repo path>')
     parser_swebench_lite.add_argument('--split', required=True, help='The split of SWE-bench Lite', metavar='<split>')
     parser_swebench_lite.add_argument('--id', required=True, help='The instance id of a benchmark instance', metavar='<instance id>')
+    parser_swebench_lite.add_argument('--test', required=True, help='The test that fails when using pytest', metavar='<test>')
+    parser_swebench_lite.add_argument('--output', required=True, help='Output file path containing patch and PR info', metavar='<out file>')
     parser_swebench_lite.add_argument('--model', default="gpt-4o-mini", help='OpenAI model to use (optional, default: gpt-4o-mini)', metavar='<model>')
 
     return parser, parser.parse_args()
@@ -137,3 +140,23 @@ def parse_paul_response(chat_history: List[BaseMessage], issue_number: int, toke
     paul_response["pr_body"] += f"Related to #{issue_number}\n"
 
     return paul_response
+
+
+
+def write_paul_response(output_path: str, paul_response: dict) -> None:
+    """
+    Saves PAUL's JSON output to a file in a human-readable format.
+
+    Args:
+        json_data (dict): The JSON object from PAUL.
+        filepath (str): Where to write the output.
+    """
+    print(f"Writing response to '{output_path}'...\n")
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write("----- Commit message -----\n")
+        f.write(paul_response["commit_msg"] + "\n\n")
+        f.write("----- PR title -----\n")
+        f.write(paul_response["pr_title"] + "\n\n")
+        f.write("----- PR body -----\n")
+        f.write(paul_response["pr_body"])
+    print(f"PAUL response successfully written! Check '{output_path}' for details.\n")
