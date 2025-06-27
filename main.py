@@ -12,8 +12,8 @@ if __name__ == "__main__":
     if args.mode == 'github':
         run_github(args.owner, args.repo, args.issue, args.model, GITHUB_TOKEN, OPENAI_API_KEY)
     elif args.mode == 'local':
-        run_local(args.path, args.issue, args.output, args.model, OPENAI_API_KEY)
+        run_local(args.path, args.issue, args.model, OPENAI_API_KEY)
     elif args.mode == 'swebench':
-        run_swebench_lite(args.path, args.split, args.id, args.test, args.output, args.model, OPENAI_API_KEY)
+        run_swebench_lite(args.path, args.split, args.id, args.test, args.model, OPENAI_API_KEY)
     else:
         parser.error("Unknown mode selected.")

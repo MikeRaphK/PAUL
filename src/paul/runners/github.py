@@ -1,11 +1,14 @@
+from ..workflow import run_paul_workflow
 from github import Github
 from github.Repository import Repository
 from subprocess import run
 from typing import Dict
 
 import os
+import uuid
 
-from ..workflow import run_paul_workflow
+CHECKOUT_DIR = "/github/workspace"
+APP_DIR = "/app"
 
 
 
@@ -17,14 +20,13 @@ def setup_git_environment() -> None:
         subprocess.CalledProcessError: If any git command fails.
         AssertionError: If the .git directory does not exist in /github/workspace.
     """
-    os.chdir("/github/workspace")
+    os.chdir(CHECKOUT_DIR)
     os.environ["GIT_DIR"] = os.path.abspath(".git")
     os.environ["GIT_WORK_TREE"] = os.getcwd()
     run(["git", "config", "user.email", "paul-bot@users.noreply.github.com"], check=True)
     run(["git", "config", "user.name", "paul-bot"], check=True)
     run(["git", "config", "--global", "--add", "safe.directory", os.getcwd()])
-    os.chdir("/app")
-
+    os.chdir(APP_DIR)
 
 
 
@@ -71,9 +73,11 @@ def run_github(owner: str, repo_name: str, issue_number: int, model: str, GITHUB
         print("No 'PAUL' label found. Exiting...")
         return
 
-    paul_response, branch_name = run_paul_workflow(model, "/github/workspace", issue.title, issue.body, issue_number, OPENAI_API_KEY)
+    branch_name = f"PAUL-branch-{uuid.uuid4().hex[:8]}"
+    run(["git", "checkout", "-b", branch_name], check=True)
+    print()
+    paul_response = run_paul_workflow(repo_path=CHECKOUT_DIR, issue_title=issue.title, issue_body=issue.body, issue_number=issue_number, OPENAI_API_KEY=OPENAI_API_KEY, model=model)
 
     print("Creating pull request...\n")
     url = create_pull_request(paul_response, branch_name, repo)
-    
     print(f"Pull request successfully created: {url}")
