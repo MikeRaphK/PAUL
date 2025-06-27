@@ -2,7 +2,7 @@
 FROM python:3.12-slim
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
-# Setup working directory and necesarry files
+# Setup necessary files
 COPY src/paul /app/src/paul
 COPY main.py /app/main.py
 COPY requirements.txt /app/requirements.txt
