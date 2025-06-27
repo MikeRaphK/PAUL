@@ -1,0 +1,16 @@
+This is a benchmark instance from the SWE-bench Lite dataset.
+Problem statement:
+{problem_statement}
+
+Hints:
+{hints_text}
+
+The following test fails when running pytest:
+{test}
+
+Your task:
+- Analyze the problem statement and hints.
+- Modify the code to fix the failing test above.
+- Make only the minimal necessary changes to resolve the issue.
+
+Return your response as specified in the system message.

@@ -1,5 +1,24 @@
-def run_swebench_lite(split, id, model: str, GITHUB_TOKEN: str, OPENAI_API_KEY: str) -> None:
-    print("Running PAUL in SWE-bench Lite mode...")
-    print(f"SWE-bench split: {split}")
-    print(f"Instance id: {id}")
-    print(f"OpenAI model: {model}")
+from ..workflow import run_paul_workflow
+from ..utils import write_paul_response
+from datasets import load_dataset
+
+import os
+
+def run_swebench_lite(repo_path: str, split: str, id: str, test: str, output_path: str, model: str, OPENAI_API_KEY: str) -> None:
+    print(f"Loading SWE-bench Lite dataset from split '{split}'...\n")
+    swebench_lite = load_dataset("princeton-nlp/SWE-bench_Lite", split=split)
+    
+    print(f"Searching for benchmark with ID '{id}' in split '{split}'...\n")
+    benchmark = None
+    for row in swebench_lite:
+        if row['instance_id'] == id:
+            benchmark = row
+            break
+    if benchmark is None:
+        raise ValueError(f"Benchmark with ID {id} not found in split {split}.")
+    
+    issue_title = f"SWE-bench Lite: {id}"
+    with open(os.path.join(os.getcwd(), "src/paul/swebench_issue_template.txt"), "r") as f:
+        issue_body = f.read().format(problem_statement=benchmark['problem_statement'], hints_text=benchmark['hints_text'], test=test)
+    paul_response, _ = run_paul_workflow(model, repo_path, issue_title, issue_body, -1, OPENAI_API_KEY)
+    write_paul_response(output_path, paul_response)
