@@ -11,4 +11,4 @@ RUN pip3 install -r requirements.txt
 
 # Get ready to execute PAUL
 ENV PYTHONUNBUFFERED=1
-ENTRYPOINT ["python3", "main.py"]
+# ENTRYPOINT ["python3", "main.py"]
