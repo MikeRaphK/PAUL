@@ -11,4 +11,6 @@ RUN pip3 install -r requirements.txt
 
 # Get ready to execute PAUL
 ENV PYTHONUNBUFFERED=1
-ENTRYPOINT ["python3", "/app/main.py"]
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
