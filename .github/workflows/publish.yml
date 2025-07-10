@@ -23,7 +23,11 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
-        run: |
-          docker build -t ghcr.io/mikeraphk/paul:latest .
-          docker push ghcr.io/mikeraphk/paul:latest
+      - name: Build and push using caching
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/mikeraphk/paul:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
