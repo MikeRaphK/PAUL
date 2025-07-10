@@ -4,6 +4,7 @@ from langchain_community.callbacks.openai_info import OpenAICallbackHandler
 from langchain_community.tools import ReadFileTool, WriteFileTool, ListDirectoryTool
 from langchain_core.messages import HumanMessage, SystemMessage, BaseMessage
 from langchain_openai import ChatOpenAI
+from langgraph.prebuilt import create_react_agent
 from typing import Optional, Dict, List
 
 import json
@@ -98,13 +99,14 @@ def run_paul_workflow(
     )
     os.chdir(repo_path)
 
-    print(f"Initializing ReAct graph using {model}...\n")
+    print(f"Initializing ReAct graph using '{model}'...\n")
     token_logger = OpenAICallbackHandler()
     llm = ChatOpenAI(
         model=model, openai_api_key=OPENAI_API_KEY, callbacks=[token_logger]
     )
     tools = [ReadFileTool(), WriteFileTool(), ListDirectoryTool(), pytest_tool]
-    PAUL = build_react_graph(tools, llm, GRAPH_PNG_PATH)
+    # PAUL = build_react_graph(tools, llm, GRAPH_PNG_PATH)
+    PAUL = create_react_agent(model=llm, tools=tools)
 
     print("Invoking PAUL...\n")
     with open(SYSTEM_MESSAGE_PATH, "r") as f:
@@ -117,7 +119,7 @@ def run_paul_workflow(
     query += f"Issue Body: {issue_body}"
     chat_history.append(HumanMessage(content=query))
 
-    output_state = PAUL.invoke({"messages": chat_history})
+    output_state = PAUL.invoke({"messages": chat_history}, config={"recursion_limit": 50})
 
     print("PAUL has finished working!\n")
     os.chdir(START_DIR)
