@@ -1,5 +1,5 @@
 from .pytest_tool import pytest_tool
-from .react_graph import build_react_graph
+# from .react_graph import build_react_graph
 from langchain_community.callbacks.openai_info import OpenAICallbackHandler
 from langchain_community.tools import ReadFileTool, WriteFileTool, ListDirectoryTool
 from langchain_core.messages import HumanMessage, SystemMessage, BaseMessage
@@ -93,7 +93,7 @@ def run_paul_workflow(
     print("Waking PAUL up...\n")
 
     START_DIR = os.getcwd()
-    GRAPH_PNG_PATH = os.path.join(START_DIR, "src/paul/resources/graph.png")
+    # GRAPH_PNG_PATH = os.path.join(START_DIR, "src/paul/resources/graph.png")
     SYSTEM_MESSAGE_PATH = os.path.join(
         START_DIR, "src/paul/resources/system_message.txt"
     )
@@ -106,7 +106,7 @@ def run_paul_workflow(
     )
     tools = [ReadFileTool(), WriteFileTool(), ListDirectoryTool(), pytest_tool]
     # PAUL = build_react_graph(tools, llm, GRAPH_PNG_PATH)
-    PAUL = create_react_agent(model=llm, tools=tools)
+    PAUL = create_react_agent(model=llm, tools=tools, response_format="dict")
 
     print("Invoking PAUL...\n")
     with open(SYSTEM_MESSAGE_PATH, "r") as f:
