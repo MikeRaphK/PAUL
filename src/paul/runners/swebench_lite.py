@@ -30,7 +30,7 @@ def run_swebench_lite(
             hints_text=benchmark["hints_text"],
             test=test,
         )
-    paul_response, _ = run_paul_workflow(
+    paul_response = run_paul_workflow(
         repo_path=repo_path,
         issue_title=issue_title,
         issue_body=issue_body,
