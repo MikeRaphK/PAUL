@@ -106,7 +106,7 @@ def run_paul_workflow(
     )
     tools = [ReadFileTool(), WriteFileTool(), ListDirectoryTool(), pytest_tool]
     # PAUL = build_react_graph(tools, llm, GRAPH_PNG_PATH)
-    PAUL = create_react_agent(model=llm, tools=tools, response_format="dict")
+    PAUL = create_react_agent(model=llm, tools=tools)
 
     print("Invoking PAUL...\n")
     with open(SYSTEM_MESSAGE_PATH, "r") as f:
