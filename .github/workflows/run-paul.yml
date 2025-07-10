@@ -36,6 +36,7 @@ jobs:
             ISSUE_NUMBER="${{ github.event.inputs.dispatch_issue_number }}"
           fi
 
+          cd /app
           python3 /app/main.py github \
             --owner "${{ github.repository_owner }}" \
             --repo "${{ github.event.repository.name }}" \
