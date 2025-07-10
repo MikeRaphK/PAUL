@@ -7,18 +7,19 @@ from typing import Dict
 import os
 import uuid
 
-CHECKOUT_DIR = "/github/workspace"
-APP_DIR = "/app"
 
-
-def setup_git_environment() -> None:
+def setup_git_environment(CHECKOUT_DIR: str) -> None:
     """
     Set up the local Git environment for safe repository operations in a Docker-based GitHub Action.
+
+    Args:
+        CHECKOUT_DIR (str): Name of the repository to set up.
 
     Raises:
         subprocess.CalledProcessError: If any git command fails.
         AssertionError: If the .git directory does not exist in /github/workspace.
     """
+    START_DIR = os.getcwd()
     os.chdir(CHECKOUT_DIR)
     os.environ["GIT_DIR"] = os.path.abspath(".git")
     os.environ["GIT_WORK_TREE"] = os.getcwd()
@@ -27,7 +28,7 @@ def setup_git_environment() -> None:
     )
     run(["git", "config", "user.name", "paul-bot"], check=True)
     run(["git", "config", "--global", "--add", "safe.directory", os.getcwd()])
-    os.chdir(APP_DIR)
+    os.chdir(START_DIR)
 
 
 def create_pull_request(
@@ -70,7 +71,8 @@ def run_github(
     OPENAI_API_KEY: str,
 ) -> None:
     print("Setting up GitHub environment...\n")
-    setup_git_environment()
+    CHECKOUT_DIR = f"/__w/{repo_name}/{repo_name}"
+    setup_git_environment(CHECKOUT_DIR)
     gh = Github(GITHUB_TOKEN)
 
     print(f"Getting issue #{issue_number}...\n")
@@ -84,6 +86,7 @@ def run_github(
     branch_name = f"PAUL-branch-{uuid.uuid4().hex[:8]}"
     run(["git", "checkout", "-b", branch_name], check=True)
     print()
+    
     paul_response = run_paul_workflow(
         repo_path=CHECKOUT_DIR,
         issue_title=issue.title,
