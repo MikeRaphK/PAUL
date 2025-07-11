@@ -93,9 +93,10 @@ def run_paul_workflow(
     print("Waking PAUL up...\n")
 
     START_DIR = os.getcwd()
-    # GRAPH_PNG_PATH = os.path.join(START_DIR, "src/paul/resources/graph.png")
+    PAUL_DIR = os.path.dirname(os.path.abspath(__file__))
+    # GRAPH_PNG_PATH = os.path.join(PAUL_DIR, "resources/graph.png")
     SYSTEM_MESSAGE_PATH = os.path.join(
-        START_DIR, "src/paul/resources/system_message.txt"
+        PAUL_DIR, "resources/system_message.txt"
     )
     os.chdir(repo_path)
 

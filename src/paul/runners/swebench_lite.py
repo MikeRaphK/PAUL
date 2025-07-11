@@ -21,8 +21,10 @@ def run_swebench_lite(
         raise ValueError(f"Benchmark with ID {id} not found in split {split}.")
 
     issue_title = f"SWE-bench Lite: {id}"
+    CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+    PAUL_DIR = os.path.dirname(CURRENT_DIR)
     SWEBENCH_TEMPLATE_PATH = os.path.join(
-        os.getcwd(), "src/paul/swebench_issue_template.txt"
+        PAUL_DIR, "resources/swebench_issue_template.txt"
     )
     with open(SWEBENCH_TEMPLATE_PATH, "r") as f:
         issue_body = f.read().format(
@@ -30,6 +32,7 @@ def run_swebench_lite(
             hints_text=benchmark["hints_text"],
             test=test,
         )
+
     paul_response = run_paul_workflow(
         repo_path=repo_path,
         issue_title=issue_title,
@@ -37,4 +40,5 @@ def run_swebench_lite(
         OPENAI_API_KEY=OPENAI_API_KEY,
         model=model,
     )
+
     print_paul_response(paul_response)

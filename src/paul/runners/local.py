@@ -6,10 +6,12 @@ def run_local(repo_path: str, issue_path: str, model: str, OPENAI_API_KEY: str) 
     print(f"Reading issue file from '{issue_path}'...\n")
     with open(issue_path, "r") as f:
         issue_body = f.read()
+
     paul_response = run_paul_workflow(
         repo_path=repo_path,
         issue_body=issue_body,
         OPENAI_API_KEY=OPENAI_API_KEY,
         model=model,
     )
+    
     print_paul_response(paul_response)

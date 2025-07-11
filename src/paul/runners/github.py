@@ -19,16 +19,13 @@ def setup_git_environment(CHECKOUT_DIR: str) -> None:
         subprocess.CalledProcessError: If any git command fails.
         AssertionError: If the .git directory does not exist in /github/workspace.
     """
-    START_DIR = os.getcwd()
-    os.chdir(CHECKOUT_DIR)
-    os.environ["GIT_DIR"] = os.path.abspath(".git")
-    os.environ["GIT_WORK_TREE"] = os.getcwd()
+    os.environ["GIT_DIR"] = os.path.join(CHECKOUT_DIR, ".git")
+    os.environ["GIT_WORK_TREE"] = CHECKOUT_DIR
     run(
         ["git", "config", "user.email", "paul-bot@users.noreply.github.com"], check=True
     )
     run(["git", "config", "user.name", "paul-bot"], check=True)
-    run(["git", "config", "--global", "--add", "safe.directory", os.getcwd()])
-    os.chdir(START_DIR)
+    run(["git", "config", "--global", "--add", "safe.directory", CHECKOUT_DIR])
 
 
 def create_pull_request(
@@ -73,9 +70,9 @@ def run_github(
     print("Setting up GitHub environment...\n")
     CHECKOUT_DIR = f"/__w/{repo_name}/{repo_name}"
     setup_git_environment(CHECKOUT_DIR)
-    gh = Github(GITHUB_TOKEN)
 
     print(f"Getting issue #{issue_number}...\n")
+    gh = Github(GITHUB_TOKEN)
     repo = gh.get_repo(f"{owner}/{repo_name}")
     issue = repo.get_issue(number=issue_number)
     label_names = [label.name for label in issue.labels]
