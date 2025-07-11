@@ -1,0 +1,20 @@
+name: Run PAUL Tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/mikeraphk/paul:latest
+
+    steps:
+      - name: Clone PAUL-tests repo to root
+        run: git clone https://github.com/MikeRaphK/PAUL-tests.git /PAUL-tests
+
+      - name: Run PAUL tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.PAUL_GITHUB_TOKEN }}
+        run: python3 /PAUL-tests/run_tests.py /app/main.py /PAUL-tests
