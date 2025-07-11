@@ -25,8 +25,12 @@ def pytest_tool(target: str = "", test_function: str = "") -> dict:
     if target:
         if test_function:
             command.append(f"{target}::{test_function}")
+            print(f"\nPAUL is using pytest tool with target: {target} and test_function: {test_function}")
         else:
             command.append(target)
+            print(f"\nPAUL is using pytest tool with target: {target}")
+    else:
+        print("\nPAUL is using pytest tool with no target")
     command.append("-vvvv")
 
     # Try to run pytest

@@ -105,7 +105,7 @@ def run_paul_workflow(
     llm = ChatOpenAI(
         model=model, openai_api_key=OPENAI_API_KEY, callbacks=[token_logger]
     )
-    tools = [ReadFileTool(), WriteFileTool(), ListDirectoryTool(), pytest_tool]
+    tools = [ReadFileTool(verbose=True), WriteFileTool(verbose=True), ListDirectoryTool(verbose=True), pytest_tool]
     # PAUL = build_react_graph(tools, llm, GRAPH_PNG_PATH)
     PAUL = create_react_agent(model=llm, tools=tools)
 
@@ -122,6 +122,6 @@ def run_paul_workflow(
 
     output_state = PAUL.invoke({"messages": chat_history}, config={"recursion_limit": 50})
 
-    print("PAUL has finished working!\n")
+    print("\n\nPAUL has finished working!\n")
     os.chdir(START_DIR)
     return parse_paul_response(output_state["messages"], token_logger, issue_number)
