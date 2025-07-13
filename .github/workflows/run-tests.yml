@@ -17,4 +17,4 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.PAUL_GITHUB_TOKEN }}
-        run: python3 /PAUL-tests/run_tests.py /app/main.py /PAUL-tests
+        run: python3 /PAUL-tests/run_tests.py /PAUL-tests

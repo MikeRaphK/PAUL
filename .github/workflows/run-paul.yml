@@ -32,8 +32,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PAUL_GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.dispatch_issue_number }}
         run: |
-          cd /app
-          python3 /app/main.py github \
+          paul github \
             --owner "${{ github.repository_owner }}" \
             --repo "${{ github.event.repository.name }}" \
             --issue "$ISSUE_NUMBER" \

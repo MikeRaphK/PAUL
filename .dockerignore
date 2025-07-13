@@ -1,1 +1,8 @@
-__pychache__/
+__pycache__/
+.github/
+.pytest_cache/
+local/
+.env/
+.gitignore
+LICENSE
+resources.md

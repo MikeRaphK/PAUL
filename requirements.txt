@@ -1,9 +1,0 @@
-datasets
-langchain_community
-langchain_core
-langchain_openai
-langgraph
-pytest
-python-dotenv
-PyGithub
-typing_extensions
