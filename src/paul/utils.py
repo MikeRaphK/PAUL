@@ -24,7 +24,7 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     # Main parser
     parser = argparse.ArgumentParser(
         description="PAUL - Patch Automation Using LLMs: LLM agent that automatically detects and patches GitHub issues.",
-        epilog="Example: python3 %(prog)s github --owner MikeRaphK --repo PAUL --issue 13 --model gpt-4o",
+        epilog="Example: paul local --path ./local/PAUL-tests/ --issue ./local/PAUL-tests/issues/is_anagram_issue.txt --model gpt-4o",
     )
     subparsers = parser.add_subparsers(
         dest="mode",
@@ -38,9 +38,9 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     parser_github = subparsers.add_parser(
         "github",
         help="Run in GitHub Actions mode",
-        usage="python3 %(prog)s --owner <repo owner username> --repo <repo name> --issue <issue number> --model <openai model>",
+        usage="paul github --owner <repo owner username> --repo <repo name> --issue <issue number> --model <openai model>",
         description="Run PAUL in GitHub Actions mode.",
-        epilog="Example: python3 %(prog)s --owner MikeRaphK --repo PAUL --issue 13 --model gpt-4o",
+        epilog="Example: paul github --owner MikeRaphK --repo PAUL --issue 13 --model gpt-4o",
     )
     parser_github.add_argument(
         "--owner",
@@ -69,9 +69,9 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     parser_local = subparsers.add_parser(
         "local",
         help="Run locally on a cloned repository",
-        usage="python3 %(prog)s --path <repo path> --issue <issue desc> --model <openai model>",
+        usage="paul local --path <repo path> --issue <issue desc> --model <openai model>",
         description="Run PAUL locally on a cloned repository.",
-        epilog="Example: python3 %(prog)s --path ./local/test_dir_1 --issue ./local/test_dir_issue_117.txt --model gpt-4o",
+        epilog="Example: paul local --path PAUL-tests/ --issue PAUL-tests/issues/is_anagram_issue.txt --model gpt-4o",
     )
     parser_local.add_argument(
         "--path",
@@ -96,9 +96,9 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     parser_swebench_lite = subparsers.add_parser(
         "swebench",
         help="Run on SWE-bench Lite",
-        usage="python3 %(prog)s --path <repo path> --split <split> --id <instance id> --test <test> --model <openai model>",
+        usage="paul swebench --path <repo path> --split <split> --id <instance id> --test <test> --model <openai model>",
         description="Run PAUL on SWE-bench Lite benchmark.",
-        epilog="Example: python3 %(prog)s --path ./local/sympy --split test --id sympy__sympy-20590 --test sympy/core/tests/test_basic.py::test_immutable --model gpt-4o",
+        epilog="Example: paul swebench --path ./local/sympy --split test --id sympy__sympy-20590 --test sympy/core/tests/test_basic.py::test_immutable --model gpt-4o",
     )
     parser_swebench_lite.add_argument(
         "--path",

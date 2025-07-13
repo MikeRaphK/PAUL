@@ -1,9 +1,9 @@
-from src.paul.runners.github import run_github
-from src.paul.runners.local import run_local
-from src.paul.runners.swebench_lite import run_swebench_lite
-from src.paul.utils import parse_args, check_env_vars
+from .runners.github import run_github
+from .runners.local import run_local
+from .runners.swebench_lite import run_swebench_lite
+from .utils import parse_args, check_env_vars
 
-if __name__ == "__main__":
+def main():
     # Parse arguements and check environment variables
     parser, args = parse_args()
     GITHUB_TOKEN, OPENAI_API_KEY = check_env_vars(args.mode)
@@ -21,3 +21,6 @@ if __name__ == "__main__":
         )
     else:
         parser.error("Unknown mode selected.")
+
+if __name__ == "__main__":
+    main()
