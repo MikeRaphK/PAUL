@@ -3,10 +3,9 @@ from subprocess import run
 
 
 @tool
-def pytest_tool(target: str = "", test_function: str = "") -> dict:
+def pytest_tool(target: str, test_function: str = "") -> str:
     """
     Runs pytest in the current environment.
-    - If called with no arguments, runs all tests (pytest).
     - If target is a directory, runs tests in that directory.
     - If target is a file, runs tests in that file.
     - If target file and test_function are both specified, runs only that test function found in target file.
@@ -14,23 +13,19 @@ def pytest_tool(target: str = "", test_function: str = "") -> dict:
         target: The file or directory to test (optional).
         test_function: The test function to run inside the target file (optional, file only).
     Returns:
-        A dict with:
-            - command: The pytest command run
-            - stdout: Standard output of the command
-            - stderr: Standard error output
-            - returncode: Exit code from pytest
+        A string with command run, stdout, stderr and return code
     """
+    if not target:
+        return f"ERROR: No target specified"
+    
     # Build command
     command = ["pytest"]
-    if target:
-        if test_function:
-            command.append(f"{target}::{test_function}")
-            print(f"\nPAUL is using pytest tool with target: {target} and test_function: {test_function}")
-        else:
-            command.append(target)
-            print(f"\nPAUL is using pytest tool with target: {target}")
+    if test_function:
+        command.append(f"{target}::{test_function}")
+        print(f"\nPAUL is using pytest tool with target: {target} and test_function: {test_function}")
     else:
-        print("\nPAUL is using pytest tool with no target")
+        command.append(target)
+        print(f"\nPAUL is using pytest tool with target: {target}")
     command.append("-vvvv")
 
     # Try to run pytest
