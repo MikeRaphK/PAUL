@@ -2,9 +2,10 @@ from dotenv import load_dotenv
 from typing import Tuple
 
 import argparse
+import concurrent.futures
 import os
 import shutil
-
+import time
 
 def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     """
@@ -17,8 +18,9 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
 
         The contents of the parsed arguments depend on the selected mode:
             - For 'github': contains 'owner', 'repo', 'issue', 'model'
-            - For 'local': contains 'repo', 'issue', 'model'
-            - For 'swebench': contains 'split', 'id', 'model'
+            - For 'local': contains 'path', 'issue', 'model'
+            - For 'swebench': contains 'path', 'split', 'id', 'test', 'model'
+            - For 'quixbugs': contains 'path', 'file', 'model'
     """
 
     # Main parser
@@ -128,6 +130,33 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         metavar="<model>",
     )
 
+    # QuixBugs mode
+    parser_quixbugs = subparsers.add_parser(
+        "quixbugs",
+        help="Run on QuixBugs",
+        usage="paul local --path <repo path> --file <file name> --model <openai model>",
+        description="Run PAUL on QuixBugs benchmark.",
+        epilog="Example: paul quixbugs --path ./local/QuixBugs/ --file flatten.py --model gpt-4o",
+    )
+    parser_quixbugs.add_argument(
+        "--path",
+        required=True,
+        help="Path to QuixBugs repository",
+        metavar="<repo path>",
+    )
+    parser_quixbugs.add_argument(
+        "--file",
+        required=True,
+        help="Name of Python program to patch",
+        metavar="<file name>",
+    )
+    parser_quixbugs.add_argument(
+        "--model",
+        default="gpt-4o-mini",
+        help="OpenAI model to use (optional, default: gpt-4o-mini)",
+        metavar="<model>",
+    )
+
     return parser, parser.parse_args()
 
 
@@ -181,3 +210,41 @@ def print_paul_response(paul_response: dict) -> None:
     print(f"\nPatch Title:\t{paul_response["pr_title"]}\n")
     print(center_text("", "-"))
     print(paul_response["pr_body"])
+
+def call_with_timeout(func, args=(), kwargs=None, timeout=60, max_retries=2, retry_delay=2):
+    """
+    Calls a function with a timeout and auto-retries if it fails due to timeout.
+
+    Args:
+        func: The function to call.
+        args: Positional arguments as tuple.
+        kwargs: Keyword arguments as dict.
+        timeout: Timeout per attempt, in seconds.
+        max_retries: How many retries (total attempts = max_retries + 1).
+        retry_delay: Seconds to wait between retries.
+
+    Returns:
+        The function's return value if successful.
+
+    Raises:
+        RuntimeError if all retries fail.
+    """
+    if kwargs is None:
+        kwargs = {}
+    last_exc = None
+    for attempt in range(max_retries + 1):
+        try:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(func, *args, **kwargs)
+                return future.result(timeout=timeout)
+        except concurrent.futures.TimeoutError:
+            print(f"Attempt {attempt+1}: timed out after {timeout} seconds.")
+            last_exc = RuntimeError(f"Timeout after {timeout} seconds on attempt {attempt+1}")
+            if attempt < max_retries:
+                print(f"Retrying after {retry_delay} seconds...")
+                time.sleep(retry_delay)
+        except Exception as e:
+            print(f"Attempt {attempt+1}: failed with exception: {e}")
+            last_exc = e
+            break  # Only retry on timeout
+    raise last_exc

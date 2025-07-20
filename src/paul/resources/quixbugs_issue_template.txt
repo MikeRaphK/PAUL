@@ -1,0 +1,16 @@
+This is a QuixBugs benchmark instance.
+
+Buggy file:
+{file_path}
+
+Test file:
+{test_path}
+
+Instructions:
+- The function in `{file_path}` is buggy. Read its definition and docstring for context.
+- The tests for this function are in `{test_path}`. These currently fail due to the bug.
+- Your task: Fix **only** the buggy function in `{file_path}` so that all tests in `{test_path}` pass.
+- **Do not** edit any other code in the file. Make the minimal necessary changes.
+- Do not modify test files or add/remove functions.
+
+Return your response as specified in the system message.

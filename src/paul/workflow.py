@@ -1,5 +1,6 @@
 from .pytest_tool import pytest_tool
 # from .react_graph import build_react_graph
+from .utils import call_with_timeout
 from langchain_community.callbacks.openai_info import OpenAICallbackHandler
 from langchain_community.tools import ReadFileTool, WriteFileTool, ListDirectoryTool
 from langchain_core.messages import HumanMessage, SystemMessage, BaseMessage
@@ -120,8 +121,10 @@ def run_paul_workflow(
     query += f"Issue Body: {issue_body}"
     chat_history.append(HumanMessage(content=query))
 
-    output_state = PAUL.invoke({"messages": chat_history}, config={"recursion_limit": 50})
-
+    def invoke_paul(PAUL, chat_history):
+        return PAUL.invoke({"messages": chat_history}, config={"recursion_limit": 50})
+    output_state = call_with_timeout(invoke_paul, args=(PAUL, chat_history))
+    
     print("\n\nPAUL has finished working!\n")
     os.chdir(START_DIR)
     return parse_paul_response(output_state["messages"], token_logger, issue_number)

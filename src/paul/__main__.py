@@ -1,6 +1,7 @@
 from .runners.github import run_github
 from .runners.local import run_local
 from .runners.swebench_lite import run_swebench_lite
+from .runners.quixbugs import run_quixbugs
 from .utils import parse_args, check_env_vars
 
 def main():
@@ -19,6 +20,8 @@ def main():
         run_swebench_lite(
             args.path, args.split, args.id, args.test, args.model, OPENAI_API_KEY
         )
+    elif args.mode == "quixbugs":
+        run_quixbugs(args.path, args.file, args.model, OPENAI_API_KEY)
     else:
         parser.error("Unknown mode selected.")
 
