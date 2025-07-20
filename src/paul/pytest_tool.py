@@ -22,10 +22,10 @@ def pytest_tool(target: str, test_function: str = "") -> str:
     command = ["pytest"]
     if test_function:
         command.append(f"{target}::{test_function}")
-        print(f"\nPAUL is using pytest tool with target: {target} and test_function: {test_function}")
+        print(f"\nPAUL is using 'Pytest' tool with target: {target} and test_function: {test_function}\n")
     else:
         command.append(target)
-        print(f"\nPAUL is using pytest tool with target: {target}")
+        print(f"\nPAUL is using 'Pytest' tool with target: {target}\n")
     command.append("-vvvv")
 
     # Try to run pytest
