@@ -71,7 +71,7 @@ def run_paul_workflow(
     OPENAI_API_KEY: str,
     issue_title: Optional[str] = None,
     issue_number: Optional[int] = None,
-    model: str = "gpt-4o-mini",
+    model: str,
 ) -> Dict[str, str]:
     """
     Executes the PAUL workflow to generate a patch for a given issue using an LLM agent.
@@ -82,7 +82,7 @@ def run_paul_workflow(
         openai_api_key (str): The OpenAI API key.
         issue_title (Optional[str]): Title of the issue to resolve. Defaults to None.
         issue_number (Optional[int]): Issue number (for response parsing). Defaults to None.
-        model (str): The OpenAI model name to use. Defaults to 'gpt-4o-mini'.
+        model (str): The OpenAI model name to use.
 
     Returns:
         Dict[str, str]: Dict with the PAUL's JSON response containing: 'commit_msg', 'pr_title', 'pr_body'.
