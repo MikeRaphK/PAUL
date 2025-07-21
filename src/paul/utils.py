@@ -2,10 +2,8 @@ from dotenv import load_dotenv
 from typing import Tuple
 
 import argparse
-import concurrent.futures
 import os
 import shutil
-import time
 
 def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     """
@@ -26,8 +24,19 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     # Main parser
     parser = argparse.ArgumentParser(
         description="PAUL - Patch Automation Using LLMs: LLM agent that automatically detects and patches GitHub issues.",
-        epilog="Example: paul local --path ./local/PAUL-tests/ --issue ./local/PAUL-tests/issues/is_anagram_issue.txt --model gpt-4o",
+        epilog="For more information on a specific mode, run: paul <mode> --help"
     )
+
+    # Parent parser for shared arguments
+    parent_parser = argparse.ArgumentParser(add_help=False)
+    parent_parser.add_argument(
+        "--model",
+        default="gpt-4o-mini",
+        help="OpenAI model to use (optional, default: gpt-4o-mini)",
+        metavar="<model>",
+    )
+
+    # Subparsers for different modes
     subparsers = parser.add_subparsers(
         dest="mode",
         required=True,
@@ -39,10 +48,11 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
     # GitHub Actions mode
     parser_github = subparsers.add_parser(
         "github",
-        help="Run in GitHub Actions mode",
-        usage="paul github --owner <repo owner username> --repo <repo name> --issue <issue number> --model <openai model>",
-        description="Run PAUL in GitHub Actions mode.",
+        help="Run in GitHub Actions mode.",
+        usage="paul github --owner <repo owner username> --repo <repo name> --issue <issue number>",
+        description="Run PAUL in GitHub Actions mode. This mode is designed to be called automatically from a GitHub Actions workflow YAML file, not for manual CLI use.",
         epilog="Example: paul github --owner MikeRaphK --repo PAUL --issue 13 --model gpt-4o",
+        parents=[parent_parser]
     )
     parser_github.add_argument(
         "--owner",
@@ -60,20 +70,15 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         help="Issue number (int)",
         metavar="<number>",
     )
-    parser_github.add_argument(
-        "--model",
-        default="gpt-4o-mini",
-        help="OpenAI model to use (optional, default: gpt-4o-mini)",
-        metavar="<model>",
-    )
 
     # Local mode
     parser_local = subparsers.add_parser(
         "local",
         help="Run locally on a cloned repository",
-        usage="paul local --path <repo path> --issue <issue desc> --model <openai model>",
+        usage="paul local --path <repo path> --issue <issue desc>",
         description="Run PAUL locally on a cloned repository.",
-        epilog="Example: paul local --path PAUL-tests/ --issue PAUL-tests/issues/is_anagram_issue.txt --model gpt-4o",
+        epilog="Example: paul local --path ./local/PAUL-tests/ --issue ./local/PAUL-tests/issues/is_anagram_issue.txt --model gpt-4o",
+        parents=[parent_parser]
     )
     parser_local.add_argument(
         "--path",
@@ -87,20 +92,15 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         help="File containing issue description",
         metavar="<issue desc>",
     )
-    parser_local.add_argument(
-        "--model",
-        default="gpt-4o-mini",
-        help="OpenAI model to use (optional, default: gpt-4o-mini)",
-        metavar="<model>",
-    )
 
     # SWE-bench Lite mode
     parser_swebench_lite = subparsers.add_parser(
         "swebench",
         help="Run on SWE-bench Lite",
-        usage="paul swebench --path <repo path> --split <split> --id <instance id> --test <test> --model <openai model>",
+        usage="paul swebench --path <repo path> --split <split> --id <instance id> --test <test>",
         description="Run PAUL on SWE-bench Lite benchmark.",
         epilog="Example: paul swebench --path ./local/sympy --split test --id sympy__sympy-20590 --test sympy/core/tests/test_basic.py::test_immutable --model gpt-4o",
+        parents=[parent_parser]
     )
     parser_swebench_lite.add_argument(
         "--path",
@@ -123,20 +123,15 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         help="The test that fails when using pytest",
         metavar="<test>",
     )
-    parser_swebench_lite.add_argument(
-        "--model",
-        default="gpt-4o-mini",
-        help="OpenAI model to use (optional, default: gpt-4o-mini)",
-        metavar="<model>",
-    )
 
     # QuixBugs mode
     parser_quixbugs = subparsers.add_parser(
         "quixbugs",
         help="Run on QuixBugs",
-        usage="paul local --path <repo path> --file <file name> --model <openai model>",
+        usage="paul local --path <repo path> --file <file name>",
         description="Run PAUL on QuixBugs benchmark.",
         epilog="Example: paul quixbugs --path ./local/QuixBugs/ --file flatten.py --model gpt-4o",
+        parents=[parent_parser]
     )
     parser_quixbugs.add_argument(
         "--path",
@@ -149,12 +144,6 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         required=True,
         help="Name of Python program to patch",
         metavar="<file name>",
-    )
-    parser_quixbugs.add_argument(
-        "--model",
-        default="gpt-4o-mini",
-        help="OpenAI model to use (optional, default: gpt-4o-mini)",
-        metavar="<model>",
     )
 
     return parser, parser.parse_args()
@@ -210,41 +199,3 @@ def print_paul_response(paul_response: dict) -> None:
     print(f"\nPatch Title:\t{paul_response["pr_title"]}\n")
     print(center_text("", "-"))
     print(paul_response["pr_body"])
-
-def call_with_timeout(func, args=(), kwargs=None, timeout=60, max_retries=2, retry_delay=2):
-    """
-    Calls a function with a timeout and auto-retries if it fails due to timeout.
-
-    Args:
-        func: The function to call.
-        args: Positional arguments as tuple.
-        kwargs: Keyword arguments as dict.
-        timeout: Timeout per attempt, in seconds.
-        max_retries: How many retries (total attempts = max_retries + 1).
-        retry_delay: Seconds to wait between retries.
-
-    Returns:
-        The function's return value if successful.
-
-    Raises:
-        RuntimeError if all retries fail.
-    """
-    if kwargs is None:
-        kwargs = {}
-    last_exc = None
-    for attempt in range(max_retries + 1):
-        try:
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(func, *args, **kwargs)
-                return future.result(timeout=timeout)
-        except concurrent.futures.TimeoutError:
-            print(f"Attempt {attempt+1}: timed out after {timeout} seconds.")
-            last_exc = RuntimeError(f"Timeout after {timeout} seconds on attempt {attempt+1}")
-            if attempt < max_retries:
-                print(f"Retrying after {retry_delay} seconds...")
-                time.sleep(retry_delay)
-        except Exception as e:
-            print(f"Attempt {attempt+1}: failed with exception: {e}")
-            last_exc = e
-            break  # Only retry on timeout
-    raise last_exc
