@@ -1,71 +1,73 @@
-# PAUL – Patch Automation Using LLMs
+# PAUL: Patch Automation Using LLMs
 
-**PAUL** (Patch Automation Using LLMs) is a developer tool that leverages Large Language Models to automatically address GitHub issues by reading, understanding, and patching codebases. Every time an issue is opened, PAUL analyzes it and generates a targeted code fix, complete with a commit message and pull request.
+**PAUL** (Patch Automation Using LLMs) is an open-source LLM-powered automation agent used for Automated Program Repair (APR). Supports a variety of modes including local repair, GitHub workflow automation, and evaluation on QuixBugs and SWE-bench Lite benchmarks.
 
-## GitHub Actions Integration
 
-To use PAUL as a GitHub action in another repository, include the following workflow configuration as `.github/workflows/run-paul.yml`:
-```yml
-name: "Run PAUL"
+## Dependencies
+- **Python 3.12**
+- **Docker** or **Poetry** for setting up
+- **OpenAI API Key**
+- **GitHub Personal Access Token:** Only for GitHub mode, must allow opening and creating pull requests
 
-on:
-  # Workflow can be triggered with a click of a button. User inputs issue number.
-  workflow_dispatch:
-    inputs:
-      issue_number:
-        description: "Issue Number"
-        required: true
-  # Workflow is triggered automatically when an issue is opened/reopened
-  issues:
-    types: [opened, reopened, labeled, edited]
 
-permissions:
-  contents: write
-  pull-requests: write
+## Installation
+### Using Docker
+Pull the Docker image from GitHub Container Registry with dependencies pre-installed:
+```bash
+docker pull ghcr.io/mikeraphk/paul:latest
+docker run --rm -it -e OPENAI_API_KEY=... ghcr.io/mikeraphk/paul:latest bash
+``` 
 
-jobs:
-  run-paul:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run PAUL Action
-        uses: MikeRaphK/PAUL@main
-        with:
-          owner: ${{ github.repository_owner }}
-          repo: ${{ github.event.repository.name }}
-          issue: ${{ github.event.issue.number || inputs.issue_number }}
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          github-token: ${{ secrets.PAUL_GITHUB_TOKEN }}
+### Using Poetry
+Clone the repository, create a virtual environment and install dependencies using Poetry:
+```bash
+git clone https://github.com/MikeRaphK/PAUL.git
+cd PAUL
+python3.12 -m venv venv
+source venv/bin/activate
+poetry install
+export OPENAI_API_KEY=...
 ```
 
-## Required Environment Variables
+### GitHub Actions Integration
+Add the workflow found in [`.github/workflows/run-paul.yml`](.github/workflows/run-paul.yml) to your public repository. In addition to your **OpenAI API key**, you will also need a **GitHub Personal Access Token** with permissions to open and create PRs. Store both keys securely using [GitHub Secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets) as `OPENAI_API_KEY` and `PAUL_GITHUB_TOKEN` respectively.
 
-When using PAUL, you need to set the following environment variables in your system or GitHub Secrets:
 
-- `OPENAI_API_KEY`: Your API key for accessing OpenAI's services. You can obtain this key from your OpenAI account.
-- `PAUL_GITHUB_TOKEN`: This should be a fine-grained Personal Access Token (PAT) with read/write permissions for contents and pull requests. You can create it in your GitHub account settings.
+## Usage
+### Local mode
+Point to a local repo and an issue description, and **PAUL** will attempt to produce a working patch locally. 
 
-To add these as GitHub Secrets, navigate to your repository on GitHub, go to Settings > Secrets and variables > Actions > New repository secret.
-
-After setting up, open up a GitHub issue and PAUL will provide his help!
-
-## Mermaid Chart
-The chart outlines PAUL's workflow that works on GitHub repositories. It’s a linear process with a single main feedback loop for tool utilization.
-
-```mermaid
-flowchart LR
-    A[Get Open Issues] --> B[Clone Repo Locally];
-    B --> C[Create PAUL-branch];
-    C --> D[Build ReAct Graph];
-    D --> P((Ask PAUL for a patch));
-    P -. Need a tool? -.-> T(Toolkit);
-    P -. Done patching? -.-> E[Create Pull Request];
-    T -->|Here's a tool call| P
+Example:
+```bash
+paul local --path ./local/PAUL-tests/ --issue ./local/PAUL-tests/issues/is_anagram_issue.txt --model gpt-4o
 ```
 
+### GitHub mode
+After adding the `run-paul.yml` to your public GitHub repository, open or edit an issue with the `PAUL` label. **PAUL** will attempt to produce a working patch and create a pull request with the patch implementation.
+
+
+## Unit tests
+Automated unit and regression tests for PAUL are maintained in the dedicated [PAUL-tests](https://github.com/MikeRaphK/PAUL-tests) repository.
+These tests are continuously run using the [`.github/workflows/run-tests.yml`](.github/workflows/run-tests.yml)  GitHub Actions workflow to ensure reliability and correctness across updates.
+
+## Benchmarks
+**PAUL**’s effectiveness and repair rate can also be evaluated on established benchmarks like QuixBugs and SWE-bench Lite.
+### QuixBugs
+**PAUL** passes all QuixBugs Python test cases, reliably fixing classic programming errors out of the box. Artifacts produced during QuixBugs runs are stored in the [artifacts](artifacts_quixbugs) folder.
+
+Example:
+```bash
+paul quixbugs --path ./local/QuixBugs/ --file flatten.py --model gpt-4o
+```
+
+### SWE-bench Lite
+**PAUL** is able to solve a subset of SWE-bench Lite tests, demonstrating its practical effectiveness on real-world Python bugs.
+
+Example:
+```bash
+paul swebench --path ./local/sympy --split test --id sympy__sympy-20590 --test sympy/core/tests/test_basic.py::test_immutable --model gpt-4o
+```
+## PAUL workflow
 ```mermaid
 graph LR
 
@@ -77,10 +79,15 @@ graph LR
   PAUL --> Updates[File Updates]
   Updates --> Tester --|Everything Passes|--> Pull[Pull Request]
   Tester --|Anything Fails|--> PAUL
-
-
 ```
 
 
 ## License
-MIT License
+MIT License. See [LICENSE](LICENSE) for details.
+
+
+## Credits
+PAUL was created by Michael-Raphael Kostagiannis as part of a BSc thesis in the Department of Informatics and Telecommunications at the National and Kapodistrian University of Athens.
+
+Special thanks to my supervisor, [Thanassis Avgerinos](https://cgi.di.uoa.gr/~thanassis/), and [kaizen](https://github.com/ethan42/kaizen).
+
