@@ -4,10 +4,10 @@
 
 
 ## Dependencies
-- **Python 3.12**
-- **Docker** or **Poetry 2.x** for setting up
-- **OpenAI API Key**
-- **GitHub Personal Access Token:** Only for GitHub mode, must allow opening and creating pull requests
+- **Python 3.12 or newer**
+- [Docker](https://docs.docker.com/engine/install/) **or** [Poetry ≥2.0.0](https://python-poetry.org/docs/)  for setting up
+- [OpenAI API Key](https://platform.openai.com/api-keys)
+- [GitHub Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens): Only for GitHub mode, must allow opening and creating pull requests
 
 
 ## Installation
@@ -34,21 +34,31 @@ Add the workflow found in [`.github/workflows/run-paul.yml`](.github/workflows/r
 
 
 ## Usage
+Once installed, you can access the full CLI help at any time:
+```bash
+paul --help
+```
+This will show all available modes and options.
+
+For more details and all available options for any subcommand, use:
+```bash
+paul <mode> --help
+```
+
 ### Local mode
 Point to a local repo and an issue description, and **PAUL** will attempt to produce a working patch locally. 
 
+You can use the provided [PAUL-tests](https://github.com/MikeRaphK/PAUL-tests) repository, which contains example unit tests. These tests are continuously run using the [`.github/workflows/run-tests.yml`](.github/workflows/run-tests.yml) GitHub Actions workflow to ensure reliability and correctness across updates.
+
 Example:
 ```bash
-paul local --path ./local/PAUL-tests/ --issue ./local/PAUL-tests/issues/is_anagram_issue.txt --model gpt-4o
+git clone https://github.com/MikeRaphK/PAUL-tests.git
+paul local --path ./PAUL-tests/ --issue ./PAUL-tests/issues/is_anagram_issue.txt
 ```
 
 ### GitHub mode
-After adding the `run-paul.yml` to your public GitHub repository, open or edit an issue with the `PAUL` label. **PAUL** will attempt to produce a working patch and create a pull request with the patch implementation.
+After adding the [run-paul.yml]((.github/workflows/run-paul.yml)) to your public GitHub repository, open or edit an issue with the `PAUL` label. **PAUL** will attempt to produce a working patch and create a pull request with the patch implementation.
 
-
-## Unit tests
-Automated unit and regression tests for PAUL are maintained in the dedicated [PAUL-tests](https://github.com/MikeRaphK/PAUL-tests) repository.
-These tests are continuously run using the [`.github/workflows/run-tests.yml`](.github/workflows/run-tests.yml)  GitHub Actions workflow to ensure reliability and correctness across updates.
 
 ## Benchmarks
 **PAUL**’s effectiveness and repair rate can also be evaluated on established benchmarks like QuixBugs and SWE-bench Lite.
