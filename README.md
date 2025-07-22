@@ -67,7 +67,8 @@ After adding the [run-paul.yml]((.github/workflows/run-paul.yml)) to your public
 
 Example:
 ```bash
-paul quixbugs --path ./local/QuixBugs/ --file flatten.py --model gpt-4o
+git clone https://github.com/jkoppel/QuixBugs.git
+paul quixbugs --path ./QuixBugs/ --file flatten.py
 ```
 
 ### SWE-bench Lite
@@ -75,7 +76,7 @@ paul quixbugs --path ./local/QuixBugs/ --file flatten.py --model gpt-4o
 
 Example:
 ```bash
-paul swebench --path ./local/sympy --split test --id sympy__sympy-20590 --test sympy/core/tests/test_basic.py::test_immutable --model gpt-4o
+paul swebench --path ./sympy --split test --id sympy__sympy-20590 --test sympy/core/tests/test_basic.py::test_immutable
 ```
 ## PAUL workflow
 ```mermaid

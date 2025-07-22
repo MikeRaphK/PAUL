@@ -23,6 +23,7 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
 
     # Main parser
     parser = argparse.ArgumentParser(
+        usage="paul <mode> <mode args>",
         description="PAUL - Patch Automation Using LLMs: LLM agent that automatically detects and patches GitHub issues.",
         epilog="For more information on a specific mode, run: paul <mode> --help"
     )
@@ -51,7 +52,7 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         help="Run in GitHub Actions mode.",
         usage="paul github --owner <repo owner username> --repo <repo name> --issue <issue number>",
         description="Run PAUL in GitHub Actions mode. This mode is designed to be called automatically from a GitHub Actions workflow YAML file, not for manual CLI use.",
-        epilog="Example: paul github --owner MikeRaphK --repo PAUL --issue 13 --model gpt-4o",
+        epilog="Example: paul github --owner MikeRaphK --repo PAUL --issue 13",
         parents=[parent_parser]
     )
     parser_github.add_argument(
@@ -77,7 +78,7 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         help="Run locally on a cloned repository",
         usage="paul local --path <repo path> --issue <issue desc>",
         description="Run PAUL locally on a cloned repository.",
-        epilog="Example: paul local --path ./local/PAUL-tests/ --issue ./local/PAUL-tests/issues/is_anagram_issue.txt --model gpt-4o",
+        epilog="Example: paul local --path ./PAUL-tests/ --issue ./PAUL-tests/issues/is_anagram_issue.txt",
         parents=[parent_parser]
     )
     parser_local.add_argument(
@@ -99,7 +100,7 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         help="Run on SWE-bench Lite",
         usage="paul swebench --path <repo path> --split <split> --id <instance id> --test <test>",
         description="Run PAUL on SWE-bench Lite benchmark.",
-        epilog="Example: paul swebench --path ./local/sympy --split test --id sympy__sympy-20590 --test sympy/core/tests/test_basic.py::test_immutable --model gpt-4o",
+        epilog="Example: paul swebench --path ./sympy --split test --id sympy__sympy-20590 --test sympy/core/tests/test_basic.py::test_immutable",
         parents=[parent_parser]
     )
     parser_swebench_lite.add_argument(
@@ -130,7 +131,7 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         help="Run on QuixBugs",
         usage="paul local --path <repo path> --file <file name>",
         description="Run PAUL on QuixBugs benchmark.",
-        epilog="Example: paul quixbugs --path ./local/QuixBugs/ --file flatten.py --model gpt-4o",
+        epilog="Example: paul quixbugs --path ./QuixBugs/ --file flatten.py",
         parents=[parent_parser]
     )
     parser_quixbugs.add_argument(
