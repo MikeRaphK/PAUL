@@ -5,7 +5,7 @@
 
 ## Dependencies
 - **Python 3.12**
-- **Docker** or **Poetry** for setting up
+- **Docker** or **Poetry 2.x** for setting up
 - **OpenAI API Key**
 - **GitHub Personal Access Token:** Only for GitHub mode, must allow opening and creating pull requests
 
