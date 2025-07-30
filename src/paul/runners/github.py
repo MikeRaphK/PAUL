@@ -109,6 +109,10 @@ def run_github(
     run(["git", "checkout", "-b", branch_name], check=True)
     print()
     
+    print("Getting tests from issue body...\n")
+    tests = get_tests(issue.body)
+    print(f"Found tests: {tests}\n")
+
     paul_response = run_paul_workflow(
         repo_path=CHECKOUT_DIR,
         issue_title=issue.title,
@@ -116,7 +120,7 @@ def run_github(
         issue_number=issue_number,
         OPENAI_API_KEY=OPENAI_API_KEY,
         model=model,
-        tests=get_tests(issue.body)
+        tests=[]
     )
 
     print("Creating pull request...\n")
