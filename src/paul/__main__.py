@@ -21,7 +21,7 @@ def main():
             args.path, args.split, args.id, args.test, args.model, OPENAI_API_KEY
         )
     elif args.mode == "quixbugs":
-        run_quixbugs(args.path, args.file, args.model, OPENAI_API_KEY)
+        run_quixbugs(args.path, args.file, args.tests, args.model, OPENAI_API_KEY)
     else:
         print("Unknown mode selected.")
         exit(1)

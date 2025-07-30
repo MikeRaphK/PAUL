@@ -76,7 +76,7 @@ After adding the [run-paul.yml]((.github/workflows/run-paul.yml)) to your public
 Example:
 ```bash
 git clone https://github.com/jkoppel/QuixBugs.git
-paul quixbugs --path ./QuixBugs/ --file flatten.py
+paul quixbugs --path ./QuixBugs/ --file flatten.py --tests ./QuixBugs/python_testcases/test_flatten.py
 ```
 
 ### SWE-bench Lite
@@ -91,7 +91,7 @@ paul swebench --path ./sympy --split test --id sympy__sympy-20590 --test sympy/c
 flowchart LR
     G[Git Repository]
     I[Issue]
-    T[Tests]
+    Tests[Tests]
     P((Patcher))
     Tool(Toolkit)
     V[Verifier]
@@ -99,7 +99,7 @@ flowchart LR
 
     G --> P;
     I --> P;
-    T --> P;
+    Tests --> P;
     P -.->|Need Tool| Tool;
     Tool --> P;
     P -.->|Done Patching| V;

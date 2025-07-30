@@ -81,15 +81,15 @@ def verify_patch(state: PaulState) -> PaulState:
     
     tests_pass = True
     for test in tests:
-        print(f"Running test: {test}")
+        print(f"Running 'pytest {test}'...")
         result = run(["pytest", test, "-vvvv"], capture_output=True, text=True)
         if result.returncode != 0:
-            error_text = f"Test '{test}' failed.\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}\n"
+            error_text = f"Failed.\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}\n"
             state["messages"].append(HumanMessage(content=error_text))
             print(error_text)
             tests_pass = False
         else:
-            print(f"Test '{test}' passed.\n")
+            print(f"Passed!\n")
     return {**state, "tests_pass": tests_pass}
 
 

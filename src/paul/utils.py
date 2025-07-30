@@ -153,7 +153,7 @@ def parse_args() -> argparse.Namespace:
         help="Run on QuixBugs",
         usage="paul local --path <repo path> --file <file name>",
         description="Run PAUL on QuixBugs benchmark.",
-        epilog="Example: paul quixbugs --path ./QuixBugs/ --file flatten.py",
+        epilog="Example: paul quixbugs --path ./QuixBugs/ --file flatten.py --tests ./QuixBugs/python_testcases/test_flatten.py",
         parents=[parent_parser]
     )
     parser_quixbugs.add_argument(
