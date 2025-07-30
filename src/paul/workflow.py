@@ -103,7 +103,7 @@ def run_paul_workflow(
     print(f"Building PAUL using '{model}'...\n")
     token_logger = OpenAICallbackHandler()
     llm = ChatOpenAI(model="gpt-4o-mini", openai_api_key=OPENAI_API_KEY, callbacks=[token_logger])
-    toolkit = [ReadFileTool(), WriteFileTool(verbose=True), ListDirectoryTool(verbose=True)]
+    toolkit = [ReadFileTool(), WriteFileTool(), ListDirectoryTool()]
     llm_with_tools = llm.bind_tools(toolkit)
     PAUL = build_paul_graph(toolkit)
 
