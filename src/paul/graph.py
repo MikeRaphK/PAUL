@@ -57,12 +57,7 @@ def need_tool(state: PaulState) -> Literal["Need tool", "Done patching"]:
     """
     chat_history = state["messages"]
     last_message = chat_history[-1]
-
     if last_message.tool_calls:
-        for call in last_message.tool_calls:
-            if call["name"] == "write_file":
-                print("Patch written. Moving to verification.\n")
-                return "Done patching"
         return "Need tool"
     print("Done patching!\n")
     return "Done patching"
