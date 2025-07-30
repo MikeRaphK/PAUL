@@ -1,14 +1,16 @@
-from .pytest_tool import pytest_tool
-# from .react_graph import build_react_graph
+from .graph import build_paul_graph
 from langchain_community.callbacks.openai_info import OpenAICallbackHandler
 from langchain_community.tools import ReadFileTool, WriteFileTool, ListDirectoryTool
-from langchain_core.messages import HumanMessage, SystemMessage, BaseMessage
+from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage
 from langchain_openai import ChatOpenAI
-from langgraph.prebuilt import create_react_agent
 from typing import Optional, Dict, List
 
 import json
 import os
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+RESOURCES_DIR = os.path.join(SCRIPT_DIR, "resources")
+SYSTEM_MESSAGE_PATH = os.path.join(RESOURCES_DIR, "system_message.txt")
 
 
 def parse_paul_response(
@@ -72,6 +74,7 @@ def run_paul_workflow(
     issue_title: Optional[str] = None,
     issue_number: Optional[int] = None,
     model: str,
+    tests: list[str]
 ) -> Dict[str, str]:
     """
     Executes the PAUL workflow to generate a patch for a given issue using an LLM agent.
@@ -90,38 +93,38 @@ def run_paul_workflow(
     Raises:
         RuntimeError: If the workflow fails due to recursion limit.
     """
-    print("Waking PAUL up...\n")
-
+    absolute_tests = []
+    for test in tests:
+        absolute_tests.append(os.path.abspath(test))
+    tests = absolute_tests
     START_DIR = os.getcwd()
-    PAUL_DIR = os.path.dirname(os.path.abspath(__file__))
-    # GRAPH_PNG_PATH = os.path.join(PAUL_DIR, "resources/graph.png")
-    SYSTEM_MESSAGE_PATH = os.path.join(
-        PAUL_DIR, "resources/system_message.txt"
-    )
     os.chdir(repo_path)
 
-    print(f"Initializing ReAct graph using '{model}'...\n")
+    print(f"Building PAUL using '{model}'...\n")
     token_logger = OpenAICallbackHandler()
-    llm = ChatOpenAI(
-        model=model, openai_api_key=OPENAI_API_KEY, callbacks=[token_logger]
-    )
-    tools = [ReadFileTool(verbose=True), WriteFileTool(verbose=True), ListDirectoryTool(verbose=True), pytest_tool]
-    # PAUL = build_react_graph(tools, llm, GRAPH_PNG_PATH)
-    PAUL = create_react_agent(model=llm, tools=tools)
+    llm = ChatOpenAI(model="gpt-4o-mini", openai_api_key=OPENAI_API_KEY, callbacks=[token_logger])
+    toolkit = [ReadFileTool(), WriteFileTool(verbose=True), ListDirectoryTool(verbose=True)]
+    llm_with_tools = llm.bind_tools(toolkit)
+    PAUL = build_paul_graph(toolkit)
 
-    print("Invoking PAUL...\n")
+    print("Building initial state...\n")
     with open(SYSTEM_MESSAGE_PATH, "r") as f:
         system_message = SystemMessage(content=f.read())
-    chat_history = [system_message]
-
     query = ""
     if issue_title is not None:
         query += f"Issue Title: {issue_title}\n"
     query += f"Issue Body: {issue_body}"
-    chat_history.append(HumanMessage(content=query))
+    chat_history = [system_message, HumanMessage(content=query)]
+    initial_state = {
+        "messages": chat_history,
+        "llm": llm_with_tools,
+        "tests": tests,
+        "tests_pass": False
+    }
 
-    output_state = PAUL.invoke({"messages": chat_history}, config={"recursion_limit": 50})
-    
-    print("\n\nPAUL has finished working!\n")
+    print("Working on a patch...\n")
+    output_state = PAUL.invoke(initial_state, config={"recursion_limit": 50})
+
+    print("PAUL has finished working!\n")
     os.chdir(START_DIR)
     return parse_paul_response(output_state["messages"], token_logger, issue_number)

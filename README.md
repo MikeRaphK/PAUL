@@ -53,11 +53,19 @@ You can use the provided [PAUL-tests](https://github.com/MikeRaphK/PAUL-tests) r
 Example:
 ```bash
 git clone https://github.com/MikeRaphK/PAUL-tests.git
-paul local --path ./PAUL-tests/ --issue ./PAUL-tests/issues/is_anagram_issue.txt
+paul local --path ./PAUL-tests/ --issue ./PAUL-tests/issues/is_anagram_issue.txt --tests ./PAUL-tests/tests/test_is_anagram.py
 ```
 
 ### GitHub mode
 After adding the [run-paul.yml]((.github/workflows/run-paul.yml)) to your public GitHub repository, open or edit an issue with the `PAUL` label. **PAUL** will attempt to produce a working patch and create a pull request with the patch implementation.
+> **To enable automatic test verification**, append a fenced code block at the end of the issue description using the `tests` language label. Each line should contain a test file or specific test function to run. Example:
+> ````
+> ```tests
+> tests/test_file.py
+> tests/test_file.py::test_important_case
+> ```
+> ````
+> If no such block is provided, PAUL will skip the verification step.
 
 
 ## Benchmarks
@@ -80,16 +88,21 @@ paul swebench --path ./sympy --split test --id sympy__sympy-20590 --test sympy/c
 ```
 ## PAUL workflow
 ```mermaid
-graph LR
+flowchart LR
+    G[Git Repository]
+    I[Issue]
+    P((Patcher))
+    T(Toolkit)
+    V[Verifier]
+    PR[Pull Request]
 
-  Git[Git Repository] --> PAUL
-  Commit(Commit) --> PAUL
-  Issue --> PAUL
-  TestFunction(Test Function/Module) --> PAUL
-  venv(Virtual Environment) --> PAUL
-  PAUL --> Updates[File Updates]
-  Updates --> Tester --|Everything Passes|--> Pull[Pull Request]
-  Tester --|Anything Fails|--> PAUL
+    G --> P;
+    I --> P;
+    P -.->|Need Tool| T;
+    T --> P;
+    P -.->|Done Patching| V;
+    V -.->|Fail| P;
+    V -.->|Pass| PR;
 ```
 
 

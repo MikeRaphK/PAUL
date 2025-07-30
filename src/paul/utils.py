@@ -5,20 +5,35 @@ import argparse
 import os
 import shutil
 
-def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
+def parse_args() -> argparse.Namespace:
     """
     Parses command-line arguments for PAUL's modes of operation.
 
     Returns:
-        Tuple[argparse.ArgumentParser, argparse.Namespace]: A tuple containing:
-            - The configured ArgumentParser instance.
-            - The parsed arguments namespace.
-
-        The contents of the parsed arguments depend on the selected mode:
-            - For 'github': contains 'owner', 'repo', 'issue', 'model'
-            - For 'local': contains 'path', 'issue', 'model'
-            - For 'swebench': contains 'path', 'split', 'id', 'test', 'model'
-            - For 'quixbugs': contains 'path', 'file', 'model'
+        argparse.Namespace: Parsed arguments. The fields depend on the selected mode:
+            - local:
+                --path: Path to local repository (str)
+                --issue: Path to issue description file (str)
+                --model: (optional) LLM model name (str)
+                --tests: (optional) List of pytest targets (list[str])
+            - github:
+                --owner: GitHub repo owner (str)
+                --repo: Repository name (str)
+                --issue: Issue number (int)
+                --model: (optional) LLM model name (str)
+                --tests: (optional) List of pytest targets (list[str])
+            - swebench:
+                --path: Repository path (str)
+                --split: Benchmark split (str)
+                --id: Benchmark instance ID (str)
+                --test: Pytest target (str)
+                --model: (optional) LLM model name (str)
+                --tests: (optional) List of pytest targets (list[str])
+            - quixbugs:
+                --path: Repository path (str)
+                --file: Python filename to patch (str)
+                --model: (optional) LLM model name (str)
+                --tests: (optional) List of pytest targets (list[str])
     """
 
     # Main parser
@@ -35,6 +50,13 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         default="gpt-4o-mini",
         help="OpenAI model to use (optional, default: gpt-4o-mini)",
         metavar="<model>",
+    )
+    parent_parser.add_argument(
+        "--tests",
+        default=[],
+        nargs="+",
+        help="Optional list of test targets to run with pytest",
+        metavar="<tests>",
     )
 
     # Subparsers for different modes
@@ -147,7 +169,7 @@ def parse_args() -> Tuple[argparse.ArgumentParser, argparse.Namespace]:
         metavar="<file name>",
     )
 
-    return parser, parser.parse_args()
+    return parser.parse_args()
 
 
 def check_env_vars(mode: str) -> Tuple[str, str]:

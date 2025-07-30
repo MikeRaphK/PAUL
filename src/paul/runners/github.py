@@ -5,6 +5,7 @@ from subprocess import run
 from typing import Dict
 
 import os
+import re
 import uuid
 
 
@@ -26,6 +27,30 @@ def setup_git_environment(CHECKOUT_DIR: str) -> None:
     )
     run(["git", "config", "user.name", "paul-bot"], check=True)
     run(["git", "config", "--global", "--add", "safe.directory", CHECKOUT_DIR])
+
+
+def get_tests(issue_body: str) -> list[str]:
+    """
+    Parses a ```tests code block from the issue body and returns a list of test paths.
+
+    Args:
+        issue_body (str): The full issue description text.
+
+    Returns:
+        list[str]: List of test paths (lines) inside the ```tests block.
+                   Returns an empty list if no block is found.
+    """
+    # Match the ```tests fenced code block
+    match = re.search(r"```tests\s*\n(.*?)```", issue_body, re.DOTALL)
+    
+    if not match:
+        return []
+
+    # Extract and clean each line inside the block
+    block_content = match.group(1)
+    lines = [line.strip() for line in block_content.strip().splitlines()]
+    
+    return [line for line in lines if line]
 
 
 def create_pull_request(
@@ -91,6 +116,7 @@ def run_github(
         issue_number=issue_number,
         OPENAI_API_KEY=OPENAI_API_KEY,
         model=model,
+        tests=get_tests(issue.body)
     )
 
     print("Creating pull request...\n")
