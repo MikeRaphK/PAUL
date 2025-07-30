@@ -91,15 +91,17 @@ paul swebench --path ./sympy --split test --id sympy__sympy-20590 --test sympy/c
 flowchart LR
     G[Git Repository]
     I[Issue]
+    T[Tests]
     P((Patcher))
-    T(Toolkit)
+    Tool(Toolkit)
     V[Verifier]
     PR[Pull Request]
 
     G --> P;
     I --> P;
-    P -.->|Need Tool| T;
     T --> P;
+    P -.->|Need Tool| Tool;
+    Tool --> P;
     P -.->|Done Patching| V;
     V -.->|Fail| P;
     V -.->|Pass| PR;

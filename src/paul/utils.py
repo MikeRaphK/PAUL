@@ -100,7 +100,7 @@ def parse_args() -> argparse.Namespace:
         help="Run locally on a cloned repository",
         usage="paul local --path <repo path> --issue <issue desc>",
         description="Run PAUL locally on a cloned repository.",
-        epilog="Example: paul local --path ./PAUL-tests/ --issue ./PAUL-tests/issues/is_anagram_issue.txt",
+        epilog="Example: paul local --path ./PAUL-tests/ --issue ./PAUL-tests/issues/is_anagram_issue.txt --tests ./PAUL-tests/tests/test_is_anagram.py",
         parents=[parent_parser]
     )
     parser_local.add_argument(
