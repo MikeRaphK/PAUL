@@ -120,7 +120,7 @@ def run_github(
         issue_number=issue_number,
         OPENAI_API_KEY=OPENAI_API_KEY,
         model=model,
-        tests=[]
+        tests=tests
     )
 
     print("Creating pull request...\n")
