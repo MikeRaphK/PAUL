@@ -84,7 +84,7 @@ paul quixbugs --path ./QuixBugs/ --file flatten.py --tests ./QuixBugs/python_tes
 
 Example:
 ```bash
-paul swebench --path ./sympy --split test --id sympy__sympy-20590 --test sympy/core/tests/test_basic.py::test_immutable
+paul swebench --path ./sympy --split test --id sympy__sympy-20590 --tests sympy/core/tests/test_basic.py::test_immutable
 ```
 ## PAUL workflow
 ```mermaid
