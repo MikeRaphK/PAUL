@@ -26,7 +26,6 @@ def parse_args() -> argparse.Namespace:
                 --path: Repository path (str)
                 --split: Benchmark split (str)
                 --id: Benchmark instance ID (str)
-                --test: Pytest target (str)
                 --model: (optional) LLM model name (str)
                 --tests: (optional) List of pytest targets (list[str])
             - quixbugs:
@@ -122,7 +121,7 @@ def parse_args() -> argparse.Namespace:
         help="Run on SWE-bench Lite",
         usage="paul swebench --path <repo path> --split <split> --id <instance id> --test <test>",
         description="Run PAUL on SWE-bench Lite benchmark.",
-        epilog="Example: paul swebench --path ./sympy --split test --id sympy__sympy-20590 --test sympy/core/tests/test_basic.py::test_immutable",
+        epilog="Example: paul swebench --path ./sympy --split test --id sympy__sympy-20590 --tests sympy/core/tests/test_basic.py::test_immutable",
         parents=[parent_parser]
     )
     parser_swebench_lite.add_argument(
@@ -139,12 +138,6 @@ def parse_args() -> argparse.Namespace:
         required=True,
         help="The instance id of a benchmark instance",
         metavar="<instance id>",
-    )
-    parser_swebench_lite.add_argument(
-        "--test",
-        required=True,
-        help="The test that fails when using pytest",
-        metavar="<test>",
     )
 
     # QuixBugs mode

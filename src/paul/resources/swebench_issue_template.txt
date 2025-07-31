@@ -5,8 +5,8 @@ Problem statement:
 Hints:
 {hints_text}
 
-The following test fails when running pytest:
-{test}
+The following test(s) fails when running pytest:
+{tests}
 
 Your task:
 - Analyze the problem statement and hints.

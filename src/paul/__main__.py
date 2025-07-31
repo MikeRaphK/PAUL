@@ -18,7 +18,7 @@ def main():
         run_local(args.path, args.issue, args.tests, args.model, OPENAI_API_KEY)
     elif args.mode == "swebench":
         run_swebench_lite(
-            args.path, args.split, args.id, args.test, args.model, OPENAI_API_KEY
+            args.path, args.split, args.id, args.tests, args.model, OPENAI_API_KEY
         )
     elif args.mode == "quixbugs":
         run_quixbugs(args.path, args.file, args.tests, args.model, OPENAI_API_KEY)

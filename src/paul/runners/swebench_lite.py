@@ -5,8 +5,15 @@ from datasets import load_dataset
 import os
 
 
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PAUL_DIR = os.path.dirname(CURRENT_DIR)
+SWEBENCH_TEMPLATE_PATH = os.path.join(
+    PAUL_DIR, "resources/swebench_issue_template.txt"
+)
+
+
 def run_swebench_lite(
-    repo_path: str, split: str, id: str, test: str, model: str, OPENAI_API_KEY: str
+    repo_path: str, split: str, id: str, tests: list[str], model: str, OPENAI_API_KEY: str
 ) -> None:
     print(f"Loading SWE-bench Lite dataset from split '{split}'...\n")
     swebench_lite = load_dataset("princeton-nlp/SWE-bench_Lite", split=split)
@@ -21,16 +28,11 @@ def run_swebench_lite(
         raise ValueError(f"Benchmark with ID {id} not found in split {split}.")
 
     issue_title = f"SWE-bench Lite: {id}"
-    CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-    PAUL_DIR = os.path.dirname(CURRENT_DIR)
-    SWEBENCH_TEMPLATE_PATH = os.path.join(
-        PAUL_DIR, "resources/swebench_issue_template.txt"
-    )
     with open(SWEBENCH_TEMPLATE_PATH, "r") as f:
         issue_body = f.read().format(
             problem_statement=benchmark["problem_statement"],
             hints_text=benchmark["hints_text"],
-            test=test,
+            tests=tests,
         )
 
     paul_response = run_paul_workflow(
@@ -39,6 +41,7 @@ def run_swebench_lite(
         issue_body=issue_body,
         OPENAI_API_KEY=OPENAI_API_KEY,
         model=model,
+        tests=tests
     )
 
     print_paul_response(paul_response)
