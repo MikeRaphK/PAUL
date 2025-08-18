@@ -2,7 +2,8 @@ from .runners.github import run_github
 from .runners.local import run_local
 from .runners.swebench_lite import run_swebench_lite
 from .runners.quixbugs import run_quixbugs
-from .utils import parse_args, check_env_vars
+from .utils import parse_args, check_env_vars, convert_to_abs
+
 
 def main():
     # Parse arguements and check environment variables
@@ -12,19 +13,46 @@ def main():
     # Run PAUL based on the selected mode
     if args.mode == "github":
         run_github(
-            args.owner, args.repo, args.issue, args.model, GITHUB_TOKEN, OPENAI_API_KEY
+            args.owner,
+            args.repo,
+            args.issue,
+            args.model,
+            convert_to_abs(args.venv),
+            GITHUB_TOKEN,
+            OPENAI_API_KEY,
         )
     elif args.mode == "local":
-        run_local(args.path, args.issue, args.tests, args.model, OPENAI_API_KEY)
+        run_local(
+            convert_to_abs(args.path),
+            convert_to_abs(args.issue),
+            convert_to_abs(args.tests),
+            args.model,
+            convert_to_abs(args.venv),
+            OPENAI_API_KEY,
+        )
     elif args.mode == "swebench":
         run_swebench_lite(
-            args.path, args.split, args.id, args.tests, args.model, OPENAI_API_KEY
+            convert_to_abs(args.path),
+            args.split,
+            args.id,
+            convert_to_abs(args.tests),
+            args.model,
+            convert_to_abs(args.venv),
+            OPENAI_API_KEY,
         )
     elif args.mode == "quixbugs":
-        run_quixbugs(args.path, args.file, args.tests, args.model, OPENAI_API_KEY)
+        run_quixbugs(
+            convert_to_abs(args.path),
+            args.file,
+            convert_to_abs(args.tests),
+            args.model,
+            convert_to_abs(args.venv),
+            OPENAI_API_KEY,
+        )
     else:
         print("Unknown mode selected.")
         exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -7,13 +7,17 @@ import os
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PAUL_DIR = os.path.dirname(CURRENT_DIR)
-SWEBENCH_TEMPLATE_PATH = os.path.join(
-    PAUL_DIR, "resources/swebench_issue_template.txt"
-)
+SWEBENCH_TEMPLATE_PATH = os.path.join(PAUL_DIR, "resources/swebench_issue_template.txt")
 
 
 def run_swebench_lite(
-    repo_path: str, split: str, id: str, tests: list[str], model: str, OPENAI_API_KEY: str
+    repo_path: str,
+    split: str,
+    id: str,
+    tests: list[str],
+    model: str,
+    venv: str,
+    OPENAI_API_KEY: str,
 ) -> None:
     print(f"Loading SWE-bench Lite dataset from split '{split}'...\n")
     swebench_lite = load_dataset("princeton-nlp/SWE-bench_Lite", split=split)
@@ -41,7 +45,8 @@ def run_swebench_lite(
         issue_body=issue_body,
         OPENAI_API_KEY=OPENAI_API_KEY,
         model=model,
-        tests=tests
+        tests=tests,
+        venv=venv,
     )
 
     print_paul_response(paul_response)

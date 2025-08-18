@@ -5,6 +5,31 @@ import argparse
 import os
 import shutil
 
+
+def convert_to_abs(path):
+    """
+    Convert a user-provided path or list of paths to absolute paths.
+
+    Args:
+        path (str or list[str]): A file/directory path string or a list of paths.
+
+    Returns:
+        str or list[str]: The normalized absolute path(s).
+    """
+
+    def _resolve(p: str) -> str:
+        return os.path.realpath(os.path.expanduser(p))
+
+    if not path:
+        return None
+    elif isinstance(path, str):
+        return _resolve(path)
+    elif isinstance(path, list):
+        return [_resolve(p) for p in path]
+    else:
+        raise TypeError("path must be a str or list[str]")
+
+
 def parse_args() -> argparse.Namespace:
     """
     Parses command-line arguments for PAUL's modes of operation.
@@ -39,7 +64,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         usage="paul <mode> <mode args>",
         description="PAUL - Patch Automation Using LLMs: LLM agent that automatically detects and patches GitHub issues.",
-        epilog="For more information on a specific mode, run: paul <mode> --help"
+        epilog="For more information on a specific mode, run: paul <mode> --help",
     )
 
     # Parent parser for shared arguments
@@ -56,6 +81,12 @@ def parse_args() -> argparse.Namespace:
         nargs="+",
         help="Optional list of test targets to run with pytest",
         metavar="<tests>",
+    )
+    parent_parser.add_argument(
+        "--venv",
+        default=None,
+        help="Path to a virtual environment to use (optional)",
+        metavar="<venv>",
     )
 
     # Subparsers for different modes
@@ -74,7 +105,7 @@ def parse_args() -> argparse.Namespace:
         usage="paul github --owner <repo owner username> --repo <repo name> --issue <issue number>",
         description="Run PAUL in GitHub Actions mode. This mode is designed to be called automatically from a GitHub Actions workflow YAML file, not for manual CLI use.",
         epilog="Example: paul github --owner MikeRaphK --repo PAUL --issue 13",
-        parents=[parent_parser]
+        parents=[parent_parser],
     )
     parser_github.add_argument(
         "--owner",
@@ -100,7 +131,7 @@ def parse_args() -> argparse.Namespace:
         usage="paul local --path <repo path> --issue <issue desc>",
         description="Run PAUL locally on a cloned repository.",
         epilog="Example: paul local --path ./PAUL-tests/ --issue ./PAUL-tests/issues/is_anagram_issue.txt --tests ./PAUL-tests/tests/test_is_anagram.py",
-        parents=[parent_parser]
+        parents=[parent_parser],
     )
     parser_local.add_argument(
         "--path",
@@ -122,7 +153,7 @@ def parse_args() -> argparse.Namespace:
         usage="paul swebench --path <repo path> --split <split> --id <instance id> --test <test>",
         description="Run PAUL on SWE-bench Lite benchmark.",
         epilog="Example: paul swebench --path ./sympy --split test --id sympy__sympy-20590 --tests sympy/core/tests/test_basic.py::test_immutable",
-        parents=[parent_parser]
+        parents=[parent_parser],
     )
     parser_swebench_lite.add_argument(
         "--path",
@@ -147,7 +178,7 @@ def parse_args() -> argparse.Namespace:
         usage="paul local --path <repo path> --file <file name>",
         description="Run PAUL on QuixBugs benchmark.",
         epilog="Example: paul quixbugs --path ./QuixBugs/ --file flatten.py --tests ./QuixBugs/python_testcases/test_flatten.py",
-        parents=[parent_parser]
+        parents=[parent_parser],
     )
     parser_quixbugs.add_argument(
         "--path",

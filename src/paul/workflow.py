@@ -74,7 +74,8 @@ def run_paul_workflow(
     issue_title: Optional[str] = None,
     issue_number: Optional[int] = None,
     model: str,
-    tests: list[str]
+    tests: list[str],
+    venv: str,
 ) -> Dict[str, str]:
     """
     Executes the PAUL workflow to generate a patch for a given issue using an LLM agent.
@@ -93,20 +94,20 @@ def run_paul_workflow(
     Raises:
         RuntimeError: If the workflow fails due to recursion limit.
     """
-    absolute_tests = []
-    for test in tests:
-        absolute_test = os.path.abspath(test)
-        print(f"Will run test: '{absolute_test}'\n")
-        absolute_tests.append(absolute_test)
     START_DIR = os.getcwd()
     os.chdir(repo_path)
 
     print(f"Building PAUL using '{model}'...\n")
     token_logger = OpenAICallbackHandler()
-    llm = ChatOpenAI(model="gpt-4o-mini", openai_api_key=OPENAI_API_KEY, callbacks=[token_logger])
+    llm = ChatOpenAI(
+        model="gpt-4o-mini", openai_api_key=OPENAI_API_KEY, callbacks=[token_logger]
+    )
     toolkit = [ReadFileTool(), WriteFileTool(), ListDirectoryTool()]
     llm_with_tools = llm.bind_tools(toolkit)
     PAUL = build_paul_graph(toolkit)
+
+    for test in tests:
+        print(f"Will run test: '{test}'\n")
 
     print("Building initial state...\n")
     with open(SYSTEM_MESSAGE_PATH, "r") as f:
@@ -119,8 +120,9 @@ def run_paul_workflow(
     initial_state = {
         "messages": chat_history,
         "llm": llm_with_tools,
-        "tests": absolute_tests,
-        "tests_pass": False
+        "tests": tests,
+        "tests_pass": False,
+        "venv": venv,
     }
 
     print("Working on a patch...\n")

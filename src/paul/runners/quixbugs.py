@@ -4,7 +4,12 @@ import os
 
 
 def run_quixbugs(
-    repo_path: str, file: str, tests: list[str], model: str, OPENAI_API_KEY: str
+    repo_path: str,
+    file: str,
+    tests: list[str],
+    model: str,
+    venv: str,
+    OPENAI_API_KEY: str,
 ) -> None:
     print(f"Running PAUL on QuixBugs file '{file}'...\n")
     issue_title = f"QuixBugs Issue: {file}"
@@ -25,7 +30,8 @@ def run_quixbugs(
         issue_body=issue_body,
         OPENAI_API_KEY=OPENAI_API_KEY,
         model=model,
-        tests=tests
+        tests=tests,
+        venv=venv,
     )
 
     print_paul_response(paul_response)

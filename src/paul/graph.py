@@ -27,6 +27,7 @@ class PaulState(TypedDict):
     llm: Runnable
     tests: list[str]
     tests_pass: bool = False
+    venv: str = None
 
 
 def invoke_llm(state: PaulState) -> PaulState:
@@ -74,22 +75,36 @@ def verify_patch(state: PaulState) -> PaulState:
         PaulState: The updated state with 'tests_pass' updated.
     """
     print("Verifying patch...\n")
+
+    # Check if tests are given
     tests = state["tests"]
     if not tests:
         print("No tests provided, skipping verification.\n")
         return {**state, "tests_pass": True}
-    
+
+    # Check if venv is given
+    pytest_path = "pytest"
+    if state["venv"]:
+        pytest_path = os.path.join(state["venv"], "bin", "pytest")
+
     tests_pass = True
     for test in tests:
-        print(f"Running 'pytest {test}'...")
-        result = run(["pytest", test, "-vvvv"], capture_output=True, text=True)
+        # Run pytest
+        print(f"Running '{pytest_path} {test}'...")
+        result = run([pytest_path, test, "-vvvv"], capture_output=True, text=True)
+
+        # Pytest failed
         if result.returncode != 0:
-            error_text = f"Failed.\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}\n"
+            error_text = (
+                f"Failed.\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}\n"
+            )
             state["messages"].append(HumanMessage(content=error_text))
             print(error_text)
             tests_pass = False
+        # Pytest passed
         else:
             print(f"Passed!\n")
+
     return {**state, "tests_pass": tests_pass}
 
 
@@ -116,23 +131,18 @@ def build_paul_graph(toolkit: list[BaseTool]) -> CompiledStateGraph:
     # Patcher
     graph.add_node("Patcher", invoke_llm)
     graph.set_entry_point("Patcher")
-    graph.add_node(
-        "Patcher Toolkit",
-        ToolNode(toolkit)
-    )
+    graph.add_node("Patcher Toolkit", ToolNode(toolkit))
     graph.add_edge("Patcher Toolkit", "Patcher")
     graph.add_conditional_edges(
         "Patcher",
         need_tool,
-        {"Need tool": "Patcher Toolkit", "Done patching": "Verifier"}
+        {"Need tool": "Patcher Toolkit", "Done patching": "Verifier"},
     )
 
     # Verifier
     graph.add_node("Verifier", verify_patch)
     graph.add_conditional_edges(
-        "Verifier",
-        tests_passed,
-        {"Fail": "Patcher", "Pass": END}
+        "Verifier", tests_passed, {"Fail": "Patcher", "Pass": END}
     )
 
     # Compile graph and write png

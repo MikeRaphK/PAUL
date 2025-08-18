@@ -1,4 +1,5 @@
 from ..workflow import run_paul_workflow
+from ..utils import convert_to_abs
 from github import Github
 from github.Repository import Repository
 from subprocess import run
@@ -42,14 +43,14 @@ def get_tests(issue_body: str) -> list[str]:
     """
     # Match the ```tests fenced code block
     match = re.search(r"```tests\s*\n(.*?)```", issue_body, re.DOTALL)
-    
+
     if not match:
         return []
 
     # Extract and clean each line inside the block
     block_content = match.group(1)
     lines = [line.strip() for line in block_content.strip().splitlines()]
-    
+
     return [line for line in lines if line]
 
 
@@ -89,6 +90,7 @@ def run_github(
     repo_name: str,
     issue_number: int,
     model: str,
+    venv: str,
     GITHUB_TOKEN: str,
     OPENAI_API_KEY: str,
 ) -> None:
@@ -107,10 +109,9 @@ def run_github(
 
     branch_name = f"PAUL-branch-{uuid.uuid4().hex[:8]}"
     run(["git", "checkout", "-b", branch_name], check=True)
-    print()
-    
+
     print("Getting tests from issue body...\n")
-    tests = get_tests(issue.body)
+    tests = convert_to_abs(get_tests(issue.body))
 
     paul_response = run_paul_workflow(
         repo_path=CHECKOUT_DIR,
@@ -119,7 +120,8 @@ def run_github(
         issue_number=issue_number,
         OPENAI_API_KEY=OPENAI_API_KEY,
         model=model,
-        tests=tests
+        tests=tests,
+        venv=venv,
     )
 
     print("Creating pull request...\n")
