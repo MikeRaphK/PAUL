@@ -95,8 +95,9 @@ def run_paul_workflow(
     """
     absolute_tests = []
     for test in tests:
-        absolute_tests.append(os.path.abspath(test))
-    tests = absolute_tests
+        absolute_test = os.path.abspath(test)
+        print(f"Will run test: '{absolute_test}'\n")
+        absolute_tests.append(absolute_test)
     START_DIR = os.getcwd()
     os.chdir(repo_path)
 
@@ -118,7 +119,7 @@ def run_paul_workflow(
     initial_state = {
         "messages": chat_history,
         "llm": llm_with_tools,
-        "tests": tests,
+        "tests": absolute_tests,
         "tests_pass": False
     }
 

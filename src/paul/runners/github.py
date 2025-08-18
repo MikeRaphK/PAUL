@@ -111,7 +111,6 @@ def run_github(
     
     print("Getting tests from issue body...\n")
     tests = get_tests(issue.body)
-    print(f"Found tests: {tests}\n")
 
     paul_response = run_paul_workflow(
         repo_path=CHECKOUT_DIR,

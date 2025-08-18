@@ -89,22 +89,33 @@ paul swebench --path ./sympy --split test --id sympy__sympy-20590 --tests sympy/
 ## PAUL workflow
 ```mermaid
 flowchart LR
-    G[Git Repository]
-    I[Issue]
-    Tests[Tests]
-    P((Patcher))
-    Tool(Toolkit)
-    V[Verifier]
+    %% Styles
+    classDef optional stroke-dasharray:6 3;
+    classDef llm fill:#1f4e2e,stroke:#8fd19e,stroke-width:2px,color:#fff;
+    classDef tool fill:#1f2a40,stroke:#9fc3ff,stroke-width:2px,color:#fff;
+
+    %% Nodes
+    GitRepo[Git Repository]
+    Issue[Issue]
+    Venv["Venv <br/> (Optional)"]:::optional
+    Patcher((Patcher)):::llm
+    Toolkit(Toolkit):::tool
+    Verifier[Verifier]
+    Tests["Tests <br/> (Optional)"]:::optional
     PR[Pull Request]
 
-    G --> P;
-    I --> P;
-    Tests --> P;
-    P -.->|Need Tool| Tool;
-    Tool --> P;
-    P -.->|Done Patching| V;
-    V -.->|Fail| P;
-    V -.->|Pass| PR;
+    %% Patcher
+    GitRepo --> Patcher;
+    Issue --> Patcher;
+    Venv --> Patcher;
+    Toolkit --> Patcher;
+    Patcher -.->|Need Tool| Toolkit;
+    
+    %% Verifier
+    Tests --> Verifier
+    Patcher -.->|Done Patching| Verifier;
+    Verifier -.->|Fail| Patcher;
+    Verifier -.->|Pass| PR;
 ```
 
 
