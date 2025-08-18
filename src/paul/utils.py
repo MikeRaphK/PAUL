@@ -21,7 +21,7 @@ def convert_to_abs(path):
         return os.path.realpath(os.path.expanduser(p))
 
     if not path:
-        return None
+        return path
     elif isinstance(path, str):
         return _resolve(path)
     elif isinstance(path, list):
