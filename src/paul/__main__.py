@@ -33,7 +33,6 @@ def main():
     elif args.mode == "swebench":
         run_swebench_lite(
             convert_to_abs(args.path),
-            args.split,
             args.id,
             convert_to_abs(args.tests),
             args.model,

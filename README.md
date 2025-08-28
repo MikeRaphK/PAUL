@@ -84,38 +84,53 @@ paul quixbugs --path ./QuixBugs/ --file flatten.py --tests ./QuixBugs/python_tes
 
 Example:
 ```bash
-paul swebench --path ./sympy --split test --id sympy__sympy-20590 --tests sympy/core/tests/test_basic.py::test_immutable
+paul swebench --path ./sympy --id sympy__sympy-20590 --venv ./sympy/sympy_venv --tests ./sympy/sympy/core/tests/test_basic.py::test_immutable
 ```
+
 ## PAUL workflow
 ```mermaid
 flowchart LR
     %% Styles
-    classDef optional stroke-dasharray:6 3;
-    classDef llm fill:#1f4e2e,stroke:#8fd19e,stroke-width:2px,color:#fff;
+    classDef patcher fill:#1f4e2e,stroke:#8fd19e,stroke-width:2px,color:#fff;
+    classDef verifier fill:#7f1d1d,stroke:#f87171,stroke-width:2px,color:#fff;
     classDef tool fill:#1f2a40,stroke:#9fc3ff,stroke-width:2px,color:#fff;
+    classDef optional stroke-dasharray:6 3;
 
     %% Nodes
     GitRepo[Git Repository]
     Issue[Issue]
-    Venv["Venv <br/> (Optional)"]:::optional
-    Patcher((Patcher)):::llm
-    Toolkit(Toolkit):::tool
-    Verifier[Verifier]
-    Tests["Tests <br/> (Optional)"]:::optional
     PR[Pull Request]
+    Patcher((Patcher)):::patcher
+    Verifier[Verifier]:::verifier
+    Toolkit(Toolkit):::tool
+    Venv["Venv <br/> (Optional)"]:::optional
+    Tests["Tests <br/> (Optional)"]:::optional
+    Model["Model Name <br/> (Optional)"]:::optional
 
     %% Patcher
     GitRepo --> Patcher;
     Issue --> Patcher;
-    Venv --> Patcher;
+    Model --> Patcher
     Toolkit --> Patcher;
     Patcher -.->|Need Tool| Toolkit;
     
     %% Verifier
     Tests --> Verifier
+    Venv --> Verifier;
     Patcher -.->|Done Patching| Verifier;
     Verifier -.->|Fail| Patcher;
     Verifier -.->|Pass| PR;
+
+    %% Green edges
+    linkStyle 4 stroke:#22c55e,stroke-width:2px;
+    linkStyle 7 stroke:#22c55e,stroke-width:2px;
+    
+    %% Blue edge
+    linkStyle 3 stroke:#3b82f6,stroke-width:2px;
+    
+    %% Red edges
+    linkStyle 8 stroke:#ef4444,stroke-width:2px;
+    linkStyle 9 stroke:#ef4444,stroke-width:2px;
 ```
 
 

@@ -1,4 +1,6 @@
 from .graph import build_paul_graph
+from .insert_lines_tool import insert_lines_tool
+from .read_numbered_tool import read_numbered_tool
 from langchain_community.callbacks.openai_info import OpenAICallbackHandler
 from langchain_community.tools import ReadFileTool, WriteFileTool, ListDirectoryTool
 from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage
@@ -76,6 +78,7 @@ def run_paul_workflow(
     model: str,
     tests: list[str],
     venv: str,
+    swe: bool = False
 ) -> Dict[str, str]:
     """
     Executes the PAUL workflow to generate a patch for a given issue using an LLM agent.
@@ -83,10 +86,13 @@ def run_paul_workflow(
     Args:
         repo_path (str): Path to the local repository.
         issue_body (str): Body/description of the issue to resolve.
-        openai_api_key (str): The OpenAI API key.
+        OPENAI_API_KEY (str): The OpenAI API key.
         issue_title (Optional[str]): Title of the issue to resolve. Defaults to None.
         issue_number (Optional[int]): Issue number (for response parsing). Defaults to None.
         model (str): The OpenAI model name to use.
+        tests (list[str]): List of pytest targets to run.
+        venv (str): Path to the Python virtual environment in which tests should be executed.
+        swe (bool): Whether to run in SWE-bench compatibility mode. Defaults to False. 
 
     Returns:
         Dict[str, str]: Dict with the PAUL's JSON response containing: 'commit_msg', 'pr_title', 'pr_body'.
@@ -102,7 +108,12 @@ def run_paul_workflow(
     llm = ChatOpenAI(
         model="gpt-4o-mini", openai_api_key=OPENAI_API_KEY, callbacks=[token_logger]
     )
-    toolkit = [ReadFileTool(), WriteFileTool(), ListDirectoryTool()]
+    toolkit = [ListDirectoryTool(), ReadFileTool(), WriteFileTool()]
+
+    # For SWE-bench, use custom tools for reading/writing
+    if swe:
+        toolkit = [ListDirectoryTool(), read_numbered_tool, insert_lines_tool]
+    
     llm_with_tools = llm.bind_tools(toolkit)
     PAUL = build_paul_graph(toolkit)
 

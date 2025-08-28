@@ -49,7 +49,6 @@ def parse_args() -> argparse.Namespace:
                 --tests: (optional) List of pytest targets (list[str])
             - swebench:
                 --path: Repository path (str)
-                --split: Benchmark split (str)
                 --id: Benchmark instance ID (str)
                 --model: (optional) LLM model name (str)
                 --tests: (optional) List of pytest targets (list[str])
@@ -150,9 +149,9 @@ def parse_args() -> argparse.Namespace:
     parser_swebench_lite = subparsers.add_parser(
         "swebench",
         help="Run on SWE-bench Lite",
-        usage="paul swebench --path <repo path> --split <split> --id <instance id> --test <test>",
+        usage="paul swebench --path <repo path> --id <instance id>",
         description="Run PAUL on SWE-bench Lite benchmark.",
-        epilog="Example: paul swebench --path ./sympy --split test --id sympy__sympy-20590 --tests sympy/core/tests/test_basic.py::test_immutable",
+        epilog="Example: paul swebench --path ./sympy --id sympy__sympy-20590 --tests ./sympy/sympy/core/tests/test_basic.py::test_immutable",
         parents=[parent_parser],
     )
     parser_swebench_lite.add_argument(
@@ -160,9 +159,6 @@ def parse_args() -> argparse.Namespace:
         required=True,
         help="Path to locally cloned SWE-bench Lite repository",
         metavar="<repo path>",
-    )
-    parser_swebench_lite.add_argument(
-        "--split", required=True, help="The split of SWE-bench Lite", metavar="<split>"
     )
     parser_swebench_lite.add_argument(
         "--id",
