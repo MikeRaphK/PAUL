@@ -50,22 +50,30 @@ def get_tool_used(state: PaulState) -> Literal["Read tool used", "Write tool use
         str: "Read tool used" for read/ls tool, otherwise "Write tool used".
     """
     chat_history = state["patcher_chat_history"]
-    last_message = chat_history[-1]
-    second_last_message = chat_history[-2]
 
-    # Getting tool info
-    tool_name = last_message.name
-    tool_args = None
-    if not hasattr(second_last_message, "tool_calls"):
-        print(f"Using {tool_name} with no args\n")
-    else:
-        for tool_call in second_last_message.tool_calls:
-            if tool_call['name'] == tool_name:
-                tool_args = tool_call['args']
-                break
+    # Search backwards through chat history to find the most recent AI message
+    ai_message = None
+    for i in range(len(chat_history) - 1, -1, -1):
+        message = chat_history[i]
+        if hasattr(message, 'tool_calls') and message.tool_calls:
+            ai_message = message
+            break
+    if ai_message is None:
+        raise ValueError("No AI message with tool calls found in chat history.")
+
+    # Check all tool calls and print them
+    write_tool_found = False
+    write_tools = ["write_file", "insert_lines_tool"]
+    for tool_call in ai_message.tool_calls:
+        tool_name = tool_call['name']
+        tool_args = tool_call['args']
         print(f"Using {tool_name} with the following args: {tool_args}\n")
-
-    if tool_name in ["read_file", "list_directory", "read_numbered"]:
+        
+        # Check if this is a write tool
+        if tool_name in write_tools:
+            write_tool_found = True
+    
+    if not write_tool_found:
         return "Read tool used"
     return "Write tool used"
 
