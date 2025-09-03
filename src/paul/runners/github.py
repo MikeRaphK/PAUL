@@ -1,9 +1,8 @@
-from ..workflow import run_paul_workflow
-from ..utils import convert_to_abs
+from ..models import PatchReport
+from ..paul import run_paul_workflow
 from github import Github
 from github.Repository import Repository
 from subprocess import run
-from typing import Dict
 
 import os
 import re
@@ -30,15 +29,15 @@ def setup_git_environment(CHECKOUT_DIR: str) -> None:
     run(["git", "config", "--global", "--add", "safe.directory", CHECKOUT_DIR])
 
 
-def get_tests(issue_body: str) -> list[str]:
+def get_tests(issue_body: str, CHECKOUT_DIR: str) -> list[str]:
     """
     Parses a ```tests code block from the issue body and returns a list of test paths.
 
     Args:
         issue_body (str): The full issue description text.
-
+        CHECKOUT_DIR (str): The checkout directory to prepend to relative test paths.
     Returns:
-        list[str]: List of test paths (lines) inside the ```tests block.
+        list[str]: List of absolute test paths (lines) inside the ```tests block.
                    Returns an empty list if no block is found.
     """
     # Match the ```tests fenced code block
@@ -51,17 +50,24 @@ def get_tests(issue_body: str) -> list[str]:
     block_content = match.group(1)
     lines = [line.strip() for line in block_content.strip().splitlines()]
 
-    return [line for line in lines if line]
+    # Convert to absolute paths
+    test_paths = []
+    for line in lines:
+        if line:
+            absolute_path = os.path.join(CHECKOUT_DIR, line)
+            test_paths.append(absolute_path)
+
+    return test_paths
 
 
 def create_pull_request(
-    paul_response: Dict[str, str], branch_name: str, repo: Repository
+    report: PatchReport, branch_name: str, repo: Repository
 ) -> str:
     """
     Commit local changes and create a pull request on GitHub.
 
     Args:
-        paul_response (Dict[str, str]): Dictionary containing the commit message, PR title, and PR body.
+        report (PatchReport): Dictionary containing the commit message, PR title, and PR body.
         branch_name (str): Name of the branch to push and use as the PR head.
         repo (Repository): PyGithub Repository object for the target repo.
 
@@ -71,13 +77,13 @@ def create_pull_request(
 
     # Commit and push
     run(["git", "add", "."], check=True)
-    run(["git", "commit", "-m", paul_response["commit_msg"]], check=True)
+    run(["git", "commit", "-m", report.commit_msg], check=True)
     run(["git", "push", "--set-upstream", "origin", branch_name], check=True)
 
     # Create pull request
     pr = repo.create_pull(
-        title=paul_response["pr_title"],
-        body=paul_response["pr_body"],
+        title=report.title,
+        body=report.body,
         head=branch_name,
         base=repo.default_branch,
         draft=False,
@@ -111,9 +117,9 @@ def run_github(
     run(["git", "checkout", "-b", branch_name], check=True)
 
     print("Getting tests from issue body...\n")
-    tests = convert_to_abs(get_tests(issue.body))
+    tests = get_tests(issue.body, CHECKOUT_DIR)
 
-    paul_response = run_paul_workflow(
+    report = run_paul_workflow(
         repo_path=CHECKOUT_DIR,
         issue_title=issue.title,
         issue_body=issue.body,
@@ -125,5 +131,5 @@ def run_github(
     )
 
     print("Creating pull request...\n")
-    url = create_pull_request(paul_response, branch_name, repo)
+    url = create_pull_request(report, branch_name, repo)
     print(f"Pull request successfully created: {url}")

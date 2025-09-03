@@ -93,42 +93,44 @@ flowchart LR
     %% Styles
     classDef patcher fill:#1f4e2e,stroke:#8fd19e,stroke-width:2px,color:#fff;
     classDef verifier fill:#7f1d1d,stroke:#f87171,stroke-width:2px,color:#fff;
+    classDef reporter fill:#4c1d95,stroke:#c084fc,stroke-width:2px,color:#fff;
     classDef tool fill:#1f2a40,stroke:#9fc3ff,stroke-width:2px,color:#fff;
     classDef optional stroke-dasharray:6 3;
+    
 
     %% Nodes
     GitRepo[Git Repository]
     Issue[Issue]
-    PR[Pull Request]
+    Model["Model Name <br/> (Optional)"]:::optional
     Patcher((Patcher)):::patcher
+    Toolkit("Toolkit <br/> (ls, ReadFile, WriteFile)"):::tool
     Verifier[Verifier]:::verifier
-    Toolkit(Toolkit):::tool
     Venv["Venv <br/> (Optional)"]:::optional
     Tests["Tests <br/> (Optional)"]:::optional
-    Model["Model Name <br/> (Optional)"]:::optional
+    Reporter((Reporter)):::reporter
 
-    %% Patcher
+    %% To Patcher
     GitRepo --> Patcher;
     Issue --> Patcher;
     Model --> Patcher
-    Toolkit --> Patcher;
-    Patcher -.->|Need Tool| Toolkit;
     
-    %% Verifier
+    %% From Patcher
+    Patcher --->|Need tool| Toolkit;
+    linkStyle 3 stroke:#22c55e,stroke-width:2px;
+
+    %% From Toolkit
+    Toolkit -.->|Read tool used| Patcher;
+    Toolkit -.->|Write tool used| Verifier;
+    linkStyle 4 stroke:#3b82f6,stroke-width:2px;
+    linkStyle 5 stroke:#3b82f6,stroke-width:2px;
+
+    %% To Verifier
     Tests --> Verifier
     Venv --> Verifier;
-    Patcher -.->|Done Patching| Verifier;
+    
+    %% From Verifier
     Verifier -.->|Fail| Patcher;
-    Verifier -.->|Pass| PR;
-
-    %% Green edges
-    linkStyle 4 stroke:#22c55e,stroke-width:2px;
-    linkStyle 7 stroke:#22c55e,stroke-width:2px;
-    
-    %% Blue edge
-    linkStyle 3 stroke:#3b82f6,stroke-width:2px;
-    
-    %% Red edges
+    Verifier -.->|Pass| Reporter;
     linkStyle 8 stroke:#ef4444,stroke-width:2px;
     linkStyle 9 stroke:#ef4444,stroke-width:2px;
 ```

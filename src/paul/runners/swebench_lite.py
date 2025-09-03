@@ -1,5 +1,5 @@
-from ..utils import print_paul_response
-from ..workflow import run_paul_workflow
+from ..paul import run_paul_workflow
+from ..utils import print_patch_report
 from datasets import load_dataset, Dataset
 
 import os
@@ -49,7 +49,7 @@ def run_swebench_lite(
         )
 
     # Run PAUL workflow
-    paul_response = run_paul_workflow(
+    report = run_paul_workflow(
         repo_path=repo_path,
         issue_title=issue_title,
         issue_body=issue_body,
@@ -59,4 +59,4 @@ def run_swebench_lite(
         venv=venv,
         swe=True
     )
-    print_paul_response(paul_response)
+    print_patch_report(report)

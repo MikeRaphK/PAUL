@@ -1,14 +1,15 @@
-from langchain_core.messages import BaseMessage, HumanMessage
-from langchain_core.runnables import Runnable
+from .models import PaulState
+
+from langchain_community.callbacks import get_openai_callback
+from langchain_core.messages import HumanMessage
 from langchain_core.tools import BaseTool
 
 from langgraph.graph import StateGraph, END
-from langgraph.graph.message import add_messages
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode
 
 from subprocess import run
-from typing import Annotated, Literal, Sequence, TypedDict
+from typing import Literal
 
 import os
 
@@ -16,52 +17,57 @@ import os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 RESOURCES_DIR = os.path.join(SCRIPT_DIR, "resources")
 GRAPH_PNG_PATH = os.path.join(RESOURCES_DIR, "graph.png")
-PATCHER_SYSTEM_MESSAGE_PATH = os.path.join(RESOURCES_DIR, "patcher_system_message.txt")
-VERIFIER_SYSTEM_MESSAGE_PATH = os.path.join(
-    RESOURCES_DIR, "verifier_system_message.txt"
-)
 
 
-class PaulState(TypedDict):
-    messages: Annotated[Sequence[BaseMessage], add_messages]
-    llm: Runnable
-    tests: list[str]
-    tests_pass: bool = False
-    venv: str = None
-
-
-def invoke_llm(state: PaulState) -> PaulState:
+def invoke_patcher(state: PaulState) -> PaulState:
     """
-    Invokes LLM using its chat history.
+    Invokes patcher LLM using its chat history.
 
     Args:
         state (PaulState): The current graph state.
 
     Returns:
-        PaulState: The updated state with 'messages' updated.
+        PaulState: 
+            A new state object with:
+            - Updated 'patcher_chat_history' containing the new message
+            - Incremented 'patcher_tokens' and 'patcher_cost' fields
     """
-    chat_history = state["messages"]
-    llm = state["llm"]
-    new_message = llm.invoke(chat_history)
-    return {**state, "messages": [new_message]}
+    llm = state["patcher_llm"]
+    chat_history = state["patcher_chat_history"]
+    with get_openai_callback() as cb:
+        new_message = llm.invoke(chat_history)
+        return {**state, "patcher_chat_history": [new_message], "patcher_tokens": state["patcher_tokens"] + cb.total_tokens, "patcher_cost": state["patcher_cost"] + cb.total_cost}
 
 
-def need_tool(state: PaulState) -> Literal["Need tool", "Done patching"]:
+def get_tool_used(state: PaulState) -> Literal["Read tool used", "Write tool used"]:
     """
-    Determines whether LLM needs to call a tool or not.
+    Checks what kind of tool LLM used.
 
     Args:
         state (PaulState): The current state.
 
     Returns:
-        str: "Need tool" if the agent requested a tool, otherwise "Done patching".
+        str: "Read tool used" for read/ls tool, otherwise "Write tool used".
     """
-    chat_history = state["messages"]
+    chat_history = state["patcher_chat_history"]
     last_message = chat_history[-1]
-    if last_message.tool_calls:
-        return "Need tool"
-    print("Done patching!\n")
-    return "Done patching"
+    second_last_message = chat_history[-2]
+
+    # Getting tool info
+    tool_name = last_message.name
+    tool_args = None
+    if not hasattr(second_last_message, "tool_calls"):
+        print(f"Using {tool_name} with no args\n")
+    else:
+        for tool_call in second_last_message.tool_calls:
+            if tool_call['name'] == tool_name:
+                tool_args = tool_call['args']
+                break
+        print(f"Using {tool_name} with the following args: {tool_args}\n")
+
+    if tool_name in ["read_file", "list_directory", "read_numbered"]:
+        return "Read tool used"
+    return "Write tool used"
 
 
 def verify_patch(state: PaulState) -> PaulState:
@@ -74,7 +80,7 @@ def verify_patch(state: PaulState) -> PaulState:
     Returns:
         PaulState: The updated state with 'tests_pass' updated.
     """
-    print("Verifying patch...\n")
+    print("Patch provided. Verifying...\n")
 
     # Check if tests are given
     tests = state["tests"]
@@ -88,27 +94,28 @@ def verify_patch(state: PaulState) -> PaulState:
         pytest_path = os.path.join(state["venv"], "bin", "pytest")
 
     tests_pass = True
+    failed_attempts = state["failed_attempts"]
     for test in tests:
+        test_txt = f"{pytest_path} {test}"
+        output_text = f"{test_txt} passed!\n"
+
         # Run pytest
-        print(f"Running '{pytest_path} {test}'...")
+        print(f"Running '{test_txt}'...")
         result = run([pytest_path, test, "-vvvv"], capture_output=True, text=True)
 
         # Pytest failed
         if result.returncode != 0:
-            error_text = (
-                f"Failed.\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}\n"
-            )
-            state["messages"].append(HumanMessage(content=error_text))
-            print(error_text)
+            output_text = f"{test_txt} failed.\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}\n"
+            state["patcher_chat_history"].append(HumanMessage(content=output_text))
             tests_pass = False
-        # Pytest passed
-        else:
-            print(f"Passed!\n")
+            failed_attempts += 1
 
-    return {**state, "tests_pass": tests_pass}
+        print(output_text)
+
+    return {**state, "tests_pass": tests_pass, "failed_attempts": failed_attempts}
 
 
-def tests_passed(state: PaulState) -> Literal["Fail", "Pass"]:
+def get_tests_status(state: PaulState) -> Literal["Fail", "Pass"]:
     """
     Checks if the tests passed.
 
@@ -119,31 +126,77 @@ def tests_passed(state: PaulState) -> Literal["Fail", "Pass"]:
         str: "Pass" if tests passed, otherwise "Fail".
     """
     if not state["tests_pass"]:
-        print("Returning to patcher...\n")
+        print("Verification failed. Returning to patcher...\n")
         return "Fail"
-    print("Done verifying!\n")
+    
+    print("Verification passed!\n")
     return "Pass"
 
 
+def invoke_reporter(state: PaulState) -> PaulState:
+    """
+    Invokes reporter LLM using its chat history.
+
+    Args:
+        state (PaulState): The current graph state.
+
+    Returns:
+        PaulState: 
+            A new state object with:
+            - Incremented 'reporter_tokens' and 'reporter_cost' fields
+            - Updated 'report' containing the final patch report
+    """
+    print("Creating report...\n")
+    chain = state["reporter_chain"]
+    chat_history = state["reporter_chat_history"]
+    chat_history.append(HumanMessage(content=f"Patch: {state["patcher_chat_history"][-2]}"))
+    
+    with get_openai_callback() as cb:
+        output = chain.invoke(chat_history)
+        report = output[0]
+        return {**state, "reporter_tokens": cb.total_tokens, "reporter_cost": cb.total_cost, "report": report}
+
+
 def build_paul_graph(toolkit: list[BaseTool]) -> CompiledStateGraph:
+    """
+    Build and compile the PAUL workflow LangGraph graph.
+
+    Args:
+        toolkit (list[BaseTool]): 
+            A list of tools for the Toolkit node.
+
+    Returns:
+        CompiledStateGraph: 
+            The compiled PAUL workflow state graph ready for execution.
+    """
     graph = StateGraph(PaulState)
 
+    # Nodes
+    graph.add_node("Patcher", invoke_patcher)
+    graph.add_node("Toolkit", ToolNode(tools=toolkit, messages_key="patcher_chat_history"))
+    graph.add_node("Verifier", verify_patch)
+    graph.add_node("Reporter", invoke_reporter)
+
     # Patcher
-    graph.add_node("Patcher", invoke_llm)
     graph.set_entry_point("Patcher")
-    graph.add_node("Patcher Toolkit", ToolNode(toolkit))
-    graph.add_edge("Patcher Toolkit", "Patcher")
+    graph.add_edge("Patcher", "Toolkit")
+
+    # Toolkit
     graph.add_conditional_edges(
-        "Patcher",
-        need_tool,
-        {"Need tool": "Patcher Toolkit", "Done patching": "Verifier"},
+        "Toolkit",
+        get_tool_used,
+        {"Read tool used": "Patcher", "Write tool used": "Verifier"},
     )
 
     # Verifier
-    graph.add_node("Verifier", verify_patch)
     graph.add_conditional_edges(
-        "Verifier", tests_passed, {"Fail": "Patcher", "Pass": END}
+        "Verifier",
+        get_tests_status,
+        {"Fail": "Patcher", "Pass": "Reporter"}
     )
+
+    # Reporter
+    graph.add_edge("Reporter", END)
 
     # Compile graph and write png
     PAUL = graph.compile()

@@ -1,5 +1,5 @@
-from ..workflow import run_paul_workflow
-from ..utils import print_paul_response
+from ..paul import run_paul_workflow
+from ..utils import print_patch_report
 
 
 def run_local(
@@ -14,7 +14,7 @@ def run_local(
     with open(issue_path, "r") as f:
         issue_body = f.read()
 
-    paul_response = run_paul_workflow(
+    report = run_paul_workflow(
         repo_path=repo_path,
         issue_body=issue_body,
         tests=tests,
@@ -22,5 +22,4 @@ def run_local(
         OPENAI_API_KEY=OPENAI_API_KEY,
         venv=venv,
     )
-
-    print_paul_response(paul_response)
+    print_patch_report(report)
