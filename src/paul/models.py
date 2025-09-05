@@ -21,6 +21,7 @@ class PaulState(TypedDict):
     # Patcher
     patcher_llm: Runnable
     patcher_chat_history: Annotated[Sequence[BaseMessage], add_messages]
+    write_tool_used: bool = False
     patcher_tokens: int = 0
     patcher_cost: float = 0.0
 

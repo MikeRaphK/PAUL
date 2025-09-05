@@ -99,6 +99,7 @@ def run_paul_workflow(
         # Patcher
         "patcher_llm": patcher_llm,
         "patcher_chat_history": patcher_chat_history,
+        "write_tool_used": False,
         "patcher_tokens": 0,
         "patcher_cost": 0.0,
 

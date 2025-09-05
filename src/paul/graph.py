@@ -17,11 +17,12 @@ import os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 RESOURCES_DIR = os.path.join(SCRIPT_DIR, "resources")
 GRAPH_PNG_PATH = os.path.join(RESOURCES_DIR, "graph.png")
+WRITE_TOOLS = ["write_file", "insert_lines_tool"]
 
 
 def invoke_patcher(state: PaulState) -> PaulState:
     """
-    Invokes patcher LLM using its chat history.
+    Invokes patcher LLM using its chat history. Also makes sure LLM calls a tool.
 
     Args:
         state (PaulState): The current graph state.
@@ -34,9 +35,28 @@ def invoke_patcher(state: PaulState) -> PaulState:
     """
     llm = state["patcher_llm"]
     chat_history = state["patcher_chat_history"]
+    
+    # Invoke until a tool call is made
+    result = []
     with get_openai_callback() as cb:
-        new_message = llm.invoke(chat_history)
-        return {**state, "patcher_chat_history": [new_message], "patcher_tokens": state["patcher_tokens"] + cb.total_tokens, "patcher_cost": state["patcher_cost"] + cb.total_cost}
+        while True:
+            new_message = llm.invoke(chat_history + result)
+            result.append(new_message)
+            if getattr(new_message, "tool_calls", None):
+                break
+            print("LLM did not call a tool. Re-invoking...\n")
+            retry_message = HumanMessage(content="Please use one of the available tools to help solve the problem. You must call a tool to proceed. Choose the most appropriate tool based on what you need to do.")
+            result.append(retry_message)
+
+    # Check if any write tool was used
+    write_tool_used = False
+    for tool_call in new_message.tool_calls:
+        tool_name = tool_call['name']
+        tool_args = tool_call.get("args", {})
+        print(f"Using '{tool_name}' tool with args: {tool_args}")
+        if tool_name in WRITE_TOOLS:
+            write_tool_used = True
+    return {**state, "patcher_chat_history": result, "write_tool_used": write_tool_used, "patcher_tokens": state["patcher_tokens"] + cb.total_tokens, "patcher_cost": state["patcher_cost"] + cb.total_cost}
 
 
 def get_tool_used(state: PaulState) -> Literal["Read tool used", "Write tool used"]:
@@ -49,32 +69,10 @@ def get_tool_used(state: PaulState) -> Literal["Read tool used", "Write tool use
     Returns:
         str: "Read tool used" for read/ls tool, otherwise "Write tool used".
     """
-    chat_history = state["patcher_chat_history"]
-
-    # Search backwards through chat history to find the most recent AI message
-    ai_message = None
-    for i in range(len(chat_history) - 1, -1, -1):
-        message = chat_history[i]
-        if hasattr(message, 'tool_calls') and message.tool_calls:
-            ai_message = message
-            break
-    if ai_message is None:
-        raise ValueError("No AI message with tool calls found in chat history.")
-
-    # Check all tool calls and print them
-    write_tool_found = False
-    write_tools = ["write_file", "insert_lines_tool"]
-    for tool_call in ai_message.tool_calls:
-        tool_name = tool_call['name']
-        tool_args = tool_call['args']
-        print(f"Using {tool_name} with the following args: {tool_args}\n")
-        
-        # Check if this is a write tool
-        if tool_name in write_tools:
-            write_tool_found = True
-    
-    if not write_tool_found:
+    if not state["write_tool_used"]:
+        print("Read tool used. Returning to patcher...\n")
         return "Read tool used"
+    print("Write tool used. Proceeding to verifier...\n")
     return "Write tool used"
 
 
@@ -88,7 +86,7 @@ def verify_patch(state: PaulState) -> PaulState:
     Returns:
         PaulState: The updated state with 'tests_pass' updated.
     """
-    print("Patch provided. Verifying...\n")
+    print("Verifying...\n")
 
     # Check if tests are given
     tests = state["tests"]
@@ -137,7 +135,7 @@ def get_tests_status(state: PaulState) -> Literal["Fail", "Pass"]:
         print("Verification failed. Returning to patcher...\n")
         return "Fail"
     
-    print("Verification passed!\n")
+    print("Verification passed! Moving to reporter...\n")
     return "Pass"
 
 
@@ -158,11 +156,11 @@ def invoke_reporter(state: PaulState) -> PaulState:
     chain = state["reporter_chain"]
     chat_history = state["reporter_chat_history"]
     chat_history.append(HumanMessage(content=f"Patch: {state["patcher_chat_history"][-2]}"))
-    
     with get_openai_callback() as cb:
         output = chain.invoke(chat_history)
-        report = output[0]
-        return {**state, "reporter_tokens": cb.total_tokens, "reporter_cost": cb.total_cost, "report": report}
+    report = output[0]
+    print("Report finished!\n")
+    return {**state, "reporter_tokens": cb.total_tokens, "reporter_cost": cb.total_cost, "report": report}
 
 
 def build_paul_graph(toolkit: list[BaseTool]) -> CompiledStateGraph:
