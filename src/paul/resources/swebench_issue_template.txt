@@ -8,6 +8,9 @@ Hints:
 The following test(s) fails when running pytest:
 {tests}
 
+The following file needs a patch. Only edit this file:
+{file}
+
 Your task:
 - Analyze the problem statement and hints.
 - Modify the code to fix the failing test above.

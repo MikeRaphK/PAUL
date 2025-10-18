@@ -100,6 +100,7 @@ def run_paul_workflow(
         "patcher_llm": patcher_llm,
         "patcher_chat_history": patcher_chat_history,
         "write_tool_used": False,
+        "file_modified": None,
         "patcher_tokens": 0,
         "patcher_cost": 0.0,
 
@@ -108,6 +109,7 @@ def run_paul_workflow(
         "tests_pass": False,
         "venv": venv,
         "failed_attempts": 0,
+        "swe": swe,
 
         # Reporter
         "reporter_chain": reporter_chain,

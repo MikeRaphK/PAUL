@@ -152,7 +152,7 @@ def parse_args() -> argparse.Namespace:
         help="Run on SWE-bench Lite",
         usage="paul swebench --path <repo path> --id <instance id>",
         description="Run PAUL on SWE-bench Lite benchmark.",
-        epilog="Example: paul swebench --path ./sympy --id sympy__sympy-20590 --tests ./sympy/sympy/core/tests/test_basic.py::test_immutable",
+        epilog="Example: paul swebench --path . --id sympy__sympy-20590 --file ./sympy/core/_print_helpers.py --tests ./sympy/core/tests/test_basic.py::test_immutable --venv ./venv/",
         parents=[parent_parser],
     )
     parser_swebench_lite.add_argument(
@@ -166,6 +166,12 @@ def parse_args() -> argparse.Namespace:
         required=True,
         help="The instance id of a benchmark instance",
         metavar="<instance id>",
+    )
+    parser_swebench_lite.add_argument(
+        "--file",
+        default=None,
+        help="Path to problem file. Enhances localization (optional)",
+        metavar="<file>",
     )
 
     # QuixBugs mode

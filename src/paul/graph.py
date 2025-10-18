@@ -8,6 +8,7 @@ from langgraph.graph import StateGraph, END
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import ToolNode
 
+from shutil import copy2
 from subprocess import run
 from typing import Literal
 
@@ -15,6 +16,7 @@ import os
 
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PATCHES_DIR = os.path.join(SCRIPT_DIR, "patches")
 RESOURCES_DIR = os.path.join(SCRIPT_DIR, "resources")
 GRAPH_PNG_PATH = os.path.join(RESOURCES_DIR, "graph.png")
 WRITE_TOOLS = ["write_file", "insert_lines_tool"]
@@ -50,13 +52,15 @@ def invoke_patcher(state: PaulState) -> PaulState:
 
     # Check if any write tool was used
     write_tool_used = False
+    file_modified = None
     for tool_call in new_message.tool_calls:
         tool_name = tool_call['name']
         tool_args = tool_call.get("args", {})
         print(f"Using '{tool_name}' tool with args: {tool_args}")
         if tool_name in WRITE_TOOLS:
             write_tool_used = True
-    return {**state, "patcher_chat_history": result, "write_tool_used": write_tool_used, "patcher_tokens": state["patcher_tokens"] + cb.total_tokens, "patcher_cost": state["patcher_cost"] + cb.total_cost}
+            file_modified = tool_args['file_path']
+    return {**state, "patcher_chat_history": result, "write_tool_used": write_tool_used, "file_modified": file_modified, "patcher_tokens": state["patcher_tokens"] + cb.total_tokens, "patcher_cost": state["patcher_cost"] + cb.total_cost}
 
 
 def get_tool_used(state: PaulState) -> Literal["Read tool used", "Write tool used"]:
@@ -72,7 +76,15 @@ def get_tool_used(state: PaulState) -> Literal["Read tool used", "Write tool use
     if not state["write_tool_used"]:
         print("Read tool used. Returning to patcher...\n")
         return "Read tool used"
+    
     print("Write tool used. Proceeding to verifier...\n")
+    # Save patch
+    attempt_number = state["failed_attempts"]
+    modified_file_path = state["file_modified"]
+    modified_file_name = os.path.basename(modified_file_path)
+    destination = os.path.join(PATCHES_DIR, f"patch_{attempt_number}_{modified_file_name}")
+    print(f"Saving modified file to '{destination}'\n")
+    copy2(modified_file_path, destination)
     return "Write tool used"
 
 
@@ -118,6 +130,9 @@ def verify_patch(state: PaulState) -> PaulState:
 
         print(output_text)
 
+    if state["swe"] and not tests_pass:
+        print(f"Reverting changes...")
+        run(["git", "reset", "--hard", "HEAD"], capture_output=True, text=True)
     return {**state, "tests_pass": tests_pass, "failed_attempts": failed_attempts}
 
 

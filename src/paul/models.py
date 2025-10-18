@@ -22,6 +22,7 @@ class PaulState(TypedDict):
     patcher_llm: Runnable
     patcher_chat_history: Annotated[Sequence[BaseMessage], add_messages]
     write_tool_used: bool = False
+    file_modified: str = None
     patcher_tokens: int = 0
     patcher_cost: float = 0.0
 
@@ -30,6 +31,7 @@ class PaulState(TypedDict):
     tests_pass: bool = False
     venv: str = None
     failed_attempts: int = 0
+    swe: bool = False
 
     # Reporter
     reporter_chain: Runnable

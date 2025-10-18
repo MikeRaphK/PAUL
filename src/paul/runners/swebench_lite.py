@@ -14,6 +14,7 @@ SWEBENCH_TEMPLATE_PATH = os.path.join(PAUL_DIR, "resources/swebench_issue_templa
 def run_swebench_lite(
     repo_path: str,
     id: str,
+    file: str,
     tests: list[str],
     model: str,
     venv: str,
@@ -41,11 +42,13 @@ def run_swebench_lite(
 
     # Read issue template and format with benchmark details
     issue_title = f"SWE-bench Lite: {id}"
+    file_text = file if file is not None else "**FILE NOT SPECIFIED** - You need to identify which file(s) require changes based on the problem statement, hints, and test failures."
     with open(SWEBENCH_TEMPLATE_PATH, "r") as f:
         issue_body = f.read().format(
             problem_statement=benchmark["problem_statement"],
             hints_text=benchmark["hints_text"],
             tests=tests,
+            file=file_text
         )
 
     # Run PAUL workflow

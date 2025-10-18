@@ -1,0 +1,2 @@
+            opstack.append(token)  
+c

@@ -34,6 +34,7 @@ def main():
         run_swebench_lite(
             convert_to_abs(args.path),
             args.id,
+            convert_to_abs(args.file),
             convert_to_abs(args.tests),
             args.model,
             convert_to_abs(args.venv),
