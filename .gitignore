@@ -4,3 +4,4 @@ __pycache__/
 local/
 *venv/
 swebench_cache/
+patches/
