@@ -6,3 +6,4 @@ local/
 .gitignore
 LICENSE
 resources.md
+artifacts/
