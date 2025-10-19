@@ -82,6 +82,7 @@ def get_tool_used(state: PaulState) -> Literal["Read tool used", "Write tool use
     attempt_number = state["failed_attempts"]
     modified_file_path = state["file_modified"]
     modified_file_name = os.path.basename(modified_file_path)
+    os.makedirs(PATCHES_DIR, exist_ok=True)
     destination = os.path.join(PATCHES_DIR, f"patch_{attempt_number}_{modified_file_name}")
     print(f"Saving modified file to '{destination}'\n")
     copy2(modified_file_path, destination)
@@ -228,6 +229,6 @@ def build_paul_graph(toolkit: list[BaseTool]) -> CompiledStateGraph:
 
     # Compile graph and write png
     PAUL = graph.compile()
-    # PAUL.get_graph().draw_mermaid_png(output_file_path=GRAPH_PNG_PATH)
+    PAUL.get_graph().draw_mermaid_png(output_file_path=GRAPH_PNG_PATH)
     print(f"Graph written to '{GRAPH_PNG_PATH}'\n")
     return PAUL

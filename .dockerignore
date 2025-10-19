@@ -1,9 +1,22 @@
+# Test cache
 __pycache__/
-.github/
+*.pyc
+*.pyo
+*.pyd
 .pytest_cache/
-local/
-.env/
+.gradle/
+
+# Git
+.git/
+.github/
 .gitignore
-LICENSE
-resources.md
+
+# Local development
+local/
 artifacts/
+.env
+*venv/
+
+# Documentation
+LICENSE
+*.md
