@@ -8,7 +8,8 @@
 - [Docker](https://docs.docker.com/engine/install/) **or** [Poetry ≥2.0.0](https://python-poetry.org/docs/)  for setting up
 - [OpenAI API Key](https://platform.openai.com/api-keys)
 - [GitHub Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens): Only for GitHub mode, must allow opening and creating pull requests
-
+- [Java JDK 17+](https://ubuntu.com/tutorials/install-jre?utm_source=chatgpt.com#1-overview) (for QuixBugs Java benchmarks)
+- [Gradle 8+](https://gradle.org/install/) (for QuixBugs Java benchmarks)
 
 ## Installation
 ### Using Docker

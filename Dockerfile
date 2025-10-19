@@ -1,7 +1,7 @@
 FROM python:3.12-slim
 
 # System dependencies
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y git default-jdk gradle && rm -rf /var/lib/apt/lists/*
 
 # Poetry
 RUN pip install poetry==2.1.3
