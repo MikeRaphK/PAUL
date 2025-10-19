@@ -32,6 +32,7 @@ class PaulState(TypedDict):
     venv: str = None
     failed_attempts: int = 0
     swe: bool = False
+    quixbugs_verify_cmd: str = None
 
     # Reporter
     reporter_chain: Runnable

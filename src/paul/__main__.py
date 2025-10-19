@@ -17,7 +17,6 @@ def main():
             args.repo,
             args.issue,
             args.model,
-            convert_to_abs(args.venv),
             GITHUB_TOKEN,
             OPENAI_API_KEY,
         )
@@ -27,7 +26,6 @@ def main():
             convert_to_abs(args.issue),
             convert_to_abs(args.tests),
             args.model,
-            convert_to_abs(args.venv),
             OPENAI_API_KEY,
         )
     elif args.mode == "swebench":
@@ -40,13 +38,13 @@ def main():
             convert_to_abs(args.venv),
             OPENAI_API_KEY,
         )
-    elif args.mode == "quixbugs":
+    elif args.mode == "quixbugs" and args.language in ["java", "python"]:
         run_quixbugs(
             convert_to_abs(args.path),
-            args.file,
-            convert_to_abs(args.tests),
+            args.language,
+            args.instance,
+            args.verify,
             args.model,
-            convert_to_abs(args.venv),
             OPENAI_API_KEY,
         )
     else:

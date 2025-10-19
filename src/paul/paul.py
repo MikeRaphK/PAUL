@@ -27,8 +27,9 @@ def run_paul_workflow(
     issue_number: int = None,
     model: str,
     tests: list[str],
-    venv: str,
-    swe: bool = False
+    venv: str = None,
+    swe: bool = False,
+    quixbugs_verify_cmd: str = None
 ) -> PatchReport:
     """
     Executes the PAUL workflow to generate a patch for a given issue using an LLM agent.
@@ -43,6 +44,7 @@ def run_paul_workflow(
         tests (list[str]): List of pytest targets to run.
         venv (str): Path to the Python virtual environment in which tests should be executed.
         swe (bool): Whether to run in SWE-bench compatibility mode. Defaults to False. 
+        quixbugs_verify_cmd (str): Verify command used for QuixBugs. Defaults to None. 
 
     Returns:
         PatchReport: 
@@ -58,7 +60,9 @@ def run_paul_workflow(
     os.chdir(repo_path)
 
     print("Testing suite:")
-    if not tests:
+    if quixbugs_verify_cmd:
+        print(quixbugs_verify_cmd)
+    elif not tests:
         print("None")
     else:
         for test in tests:
@@ -110,6 +114,7 @@ def run_paul_workflow(
         "venv": venv,
         "failed_attempts": 0,
         "swe": swe,
+        "quixbugs_verify_cmd": quixbugs_verify_cmd,
 
         # Reporter
         "reporter_chain": reporter_chain,

@@ -1,0 +1,3 @@
+$ paul quixbugs java --path . --instance NEXT_PALINDROME --verify --model gpt-4o
+
+

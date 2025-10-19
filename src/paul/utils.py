@@ -75,19 +75,7 @@ def parse_args() -> argparse.Namespace:
         help="OpenAI model to use (optional, default: gpt-4o-mini)",
         metavar="<model>",
     )
-    parent_parser.add_argument(
-        "--tests",
-        default=[],
-        nargs="+",
-        help="Optional list of test targets to run with pytest",
-        metavar="<tests>",
-    )
-    parent_parser.add_argument(
-        "--venv",
-        default=None,
-        help="Path to a virtual environment to use (optional)",
-        metavar="<venv>",
-    )
+
 
     # Subparsers for different modes
     subparsers = parser.add_subparsers(
@@ -123,6 +111,13 @@ def parse_args() -> argparse.Namespace:
         help="Issue number (int)",
         metavar="<number>",
     )
+    parser_github.add_argument(
+        "--tests",
+        default=[],
+        nargs="+",
+        help="List of pytest test targets (optional)",
+        metavar="<tests>",
+    )
 
     # Local mode
     parser_local = subparsers.add_parser(
@@ -145,6 +140,13 @@ def parse_args() -> argparse.Namespace:
         help="File containing issue description",
         metavar="<issue desc>",
     )
+    parser_local.add_argument(
+        "--tests",
+        default=[],
+        nargs="+",
+        help="List of pytest test targets (optional)",
+        metavar="<tests>",
+    )
 
     # SWE-bench Lite mode
     parser_swebench_lite = subparsers.add_parser(
@@ -152,7 +154,7 @@ def parse_args() -> argparse.Namespace:
         help="Run on SWE-bench Lite",
         usage="paul swebench --path <repo path> --id <instance id>",
         description="Run PAUL on SWE-bench Lite benchmark.",
-        epilog="Example: paul swebench --path . --id sympy__sympy-20590 --file ./sympy/core/_print_helpers.py --tests ./sympy/core/tests/test_basic.py::test_immutable --venv ./venv/",
+        epilog="Example: paul swebench --path ./sympy__sympy-20590/ --id sympy__sympy-20590 --file ./sympy__sympy-20590/sympy/core/_print_helpers.py --tests ./sympy__sympy-20590/sympy/core/tests/test_basic.py::test_immutable --venv ./sympy__sympy-20590/venv/",
         parents=[parent_parser],
     )
     parser_swebench_lite.add_argument(
@@ -173,27 +175,90 @@ def parse_args() -> argparse.Namespace:
         help="Path to problem file. Enhances localization (optional)",
         metavar="<file>",
     )
+    parser_swebench_lite.add_argument(
+        "--venv",
+        required=True,
+        help="Python venv with pytest and dependencies installed",
+        metavar="<venv>",
+    )
+    parser_swebench_lite.add_argument(
+        "--tests",
+        default=[],
+        nargs="+",
+        help="List of pytest test targets (optional)",
+        metavar="<tests>",
+    )
 
-    # QuixBugs mode
+
+    # QuixBugs mode with Python/Java subcommands
     parser_quixbugs = subparsers.add_parser(
         "quixbugs",
         help="Run on QuixBugs",
-        usage="paul local --path <repo path> --file <file name>",
+        usage="paul quixbugs <language> --path <repo path> --instance <name>",
         description="Run PAUL on QuixBugs benchmark.",
-        epilog="Example: paul quixbugs --path ./QuixBugs/ --file flatten.py --tests ./QuixBugs/python_testcases/test_flatten.py",
+    )
+    
+    # Subparsers for QuixBugs languages
+    quixbugs_subparsers = parser_quixbugs.add_subparsers(
+        dest="language",
+        required=True,
+        title="language",
+        metavar="<language>",
+        description="Choose Python or Java mode for QuixBugs",
+    )
+    
+    # Python mode
+    parser_quixbugs_python = quixbugs_subparsers.add_parser(
+        "python",
+        help="Run on Python QuixBugs",
+        usage="paul quixbugs python --path <repo path> --instance <name>",
+        description="Run PAUL on Python QuixBugs benchmark.",
+        epilog="Example: paul quixbugs python --path ./QuixBugs/ --instance flatten --verify",
         parents=[parent_parser],
     )
-    parser_quixbugs.add_argument(
+    parser_quixbugs_python.add_argument(
         "--path",
         required=True,
         help="Path to QuixBugs repository",
         metavar="<repo path>",
     )
-    parser_quixbugs.add_argument(
-        "--file",
+    parser_quixbugs_python.add_argument(
+        "--instance",
         required=True,
-        help="Name of Python program to patch",
-        metavar="<file name>",
+        help="Name of bug instance (without .py extension)",
+        metavar="<name>",
+    )
+    parser_quixbugs_python.add_argument(
+        "--verify",
+        action="store_true",
+        help="Verify the patch by running its corresponding test (optional)",
+    )
+    
+    # Java mode
+    parser_quixbugs_java = quixbugs_subparsers.add_parser(
+        "java",
+        help="Run on Java QuixBugs",
+        usage="paul quixbugs java --path <repo path> --instance <name>",
+        description="Run PAUL on Java QuixBugs benchmark.",
+        epilog="Example: paul quixbugs java --path ./QuixBugs/ --instance FLATTEN --verify",
+        parents=[parent_parser],
+    )
+    parser_quixbugs_java.add_argument(
+        "--path",
+        required=True,
+        help="Path to QuixBugs repository",
+        metavar="<repo path>",
+    )
+    parser_quixbugs_java.add_argument(
+        "--instance",
+        required=True,
+        help="Name of bug instance (uppercase, without .java extension)",
+        metavar="<name>",
+    )
+    parser_quixbugs_java.add_argument(
+        "--verify",
+        action="store_true",
+        help="Verify the patch by running its corresponding test (optional)",
     )
 
     return parser.parse_args()

@@ -96,7 +96,6 @@ def run_github(
     repo_name: str,
     issue_number: int,
     model: str,
-    venv: str,
     GITHUB_TOKEN: str,
     OPENAI_API_KEY: str,
 ) -> None:
@@ -127,7 +126,6 @@ def run_github(
         OPENAI_API_KEY=OPENAI_API_KEY,
         model=model,
         tests=tests,
-        venv=venv,
     )
 
     print("Creating pull request...\n")

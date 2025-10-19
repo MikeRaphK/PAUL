@@ -102,33 +102,40 @@ def verify_patch(state: PaulState) -> PaulState:
 
     # Check if tests are given
     tests = state["tests"]
-    if not tests:
+    verify_cmd = state["quixbugs_verify_cmd"]
+    if not tests and not verify_cmd:
         print("No tests provided, skipping verification.\n")
         return {**state, "tests_pass": True}
 
-    # Check if venv is given
-    pytest_path = "pytest"
-    if state["venv"]:
-        pytest_path = os.path.join(state["venv"], "bin", "pytest")
+    # Setup for QuixBugs
+    cmd_prefix = ""
+    if verify_cmd:
+        tests = [verify_cmd]
+    # Setup for pytest
+    else:
+        cmd_prefix = "pytest"
+        if state["venv"]:
+            cmd_prefix = os.path.join(state["venv"], "bin", "pytest")
+        cmd_prefix = cmd_prefix + " -vvvv"
 
     tests_pass = True
     failed_attempts = state["failed_attempts"]
     for test in tests:
-        test_txt = f"{pytest_path} {test}"
-        output_text = f"{test_txt} passed!\n"
+        cmd = f"{cmd_prefix} {test}".strip()
+        output = f"{cmd} passed!\n"
 
         # Run pytest
-        print(f"Running '{test_txt}'...")
-        result = run([pytest_path, test, "-vvvv"], capture_output=True, text=True)
+        print(f"Running '{cmd}'...")
+        result = run(cmd.split(), capture_output=True, text=True)
 
         # Pytest failed
         if result.returncode != 0:
-            output_text = f"{test_txt} failed.\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}\n"
-            state["patcher_chat_history"].append(HumanMessage(content=output_text))
+            output = f"{cmd} failed.\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}\n"
+            state["patcher_chat_history"].append(HumanMessage(content=output))
             tests_pass = False
             failed_attempts += 1
 
-        print(output_text)
+        print(output)
 
     if state["swe"] and not tests_pass:
         print(f"Reverting changes...")
@@ -221,6 +228,6 @@ def build_paul_graph(toolkit: list[BaseTool]) -> CompiledStateGraph:
 
     # Compile graph and write png
     PAUL = graph.compile()
-    PAUL.get_graph().draw_mermaid_png(output_file_path=GRAPH_PNG_PATH)
+    # PAUL.get_graph().draw_mermaid_png(output_file_path=GRAPH_PNG_PATH)
     print(f"Graph written to '{GRAPH_PNG_PATH}'\n")
     return PAUL
