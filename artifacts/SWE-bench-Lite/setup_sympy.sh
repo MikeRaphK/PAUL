@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # You can change this
-SYMPY_PATH="./sympy_20590_swe"
+SYMPY_PATH="./sympy__sympy-20590"
 
 ORIG_DIR="$(pwd)"
 VENV_PATH="$SYMPY_PATH/venv"
