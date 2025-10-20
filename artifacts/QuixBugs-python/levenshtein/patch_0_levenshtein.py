@@ -7,8 +7,7 @@ def levenshtein(source, target):
 
     else:
         return 1 + min(
-            levenshtein(source,     target[1:]),
-            levenshtein(source[1:], target[1:]),
-            levenshtein(source[1:], target)
-        )  # Fix to calculate min edit correctly
-
+            levenshtein(source,     target[1:]),  # Cost of insertion
+            levenshtein(source[1:], target[1:]),  # Cost of replacement
+            levenshtein(source[1:], target)         # Cost of deletion
+        )

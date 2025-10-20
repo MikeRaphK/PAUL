@@ -1,3 +1,9 @@
+package java_programs;
+
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
+
 public class NEXT_PALINDROME {
 
     public static String next_palindrome(int[] digit_list) {
@@ -26,12 +32,11 @@ public class NEXT_PALINDROME {
             }
         }
 
-        // Handle case when all digits are 9 by returning 100...001
-        ArrayList<Integer> otherwise = new ArrayList<Integer>();
-        otherwise.add(1);
-        otherwise.addAll(Collections.nCopies(digit_list.length, 0));
-        otherwise.add(1);
+        // Handle case when all digits are 9 by returning 100...001 as string format
+        int[] result = new int[digit_list.length + 1];
+        result[0] = 1;
+        result[result.length-1] = 1;
 
-        return otherwise.toString();
+        return Arrays.toString(result);
     }
 }

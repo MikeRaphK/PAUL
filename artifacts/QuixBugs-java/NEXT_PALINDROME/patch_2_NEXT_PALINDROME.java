@@ -1,3 +1,7 @@
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
+
 public class NEXT_PALINDROME {
 
     public static String next_palindrome(int[] digit_list) {
