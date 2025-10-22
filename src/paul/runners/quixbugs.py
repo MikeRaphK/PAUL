@@ -26,7 +26,7 @@ def run_quixbugs(
         file_path = f"./java_programs/{name}.java"
         test_path = f"./java_testcases/junit/{name}_TEST.java"
         if verify:
-            quixbugs_verify_cmd = f"gradle test --tests java_testcases.junit.{name}_TEST"
+            quixbugs_verify_cmd = f"gradle test --tests java_testcases.junit.{name}_TEST --info"
 
     print(f"Running PAUL on QuixBugs file '{file_path}'...\n")
     issue_title = f"QuixBugs Issue: {file_path}"
